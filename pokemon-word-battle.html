@@ -235,6 +235,31 @@
   .set-actions button{flex:1;border:2px solid #222;border-radius:11px;padding:11px 4px;font-weight:800;
     font-size:13px;cursor:pointer;background:#eef4ff;color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.12);}
   .set-actions button:active{transform:translateY(2px);box-shadow:none;}
+  .set-study{width:100%;margin-top:8px;border:2px solid #7d0d0d;border-radius:11px;padding:12px;font-weight:800;
+    font-size:14px;cursor:pointer;color:#fff;background:linear-gradient(var(--red),var(--red-dark));box-shadow:0 3px 0 var(--red-dark);}
+  .set-study:active{transform:translateY(2px);box-shadow:none;}
+
+  /* ---------- 5분 학습 타이머 ---------- */
+  .study-head{color:#fff;font-weight:900;text-align:center;font-size:18px;margin:6px 0 0;}
+  .study-chunk{display:block;font-size:12px;color:var(--yellow);margin-top:3px;}
+  .big-timer{font-size:66px;font-weight:900;color:#fff;text-align:center;letter-spacing:2px;
+    text-shadow:2px 3px 0 var(--blue-dark);font-variant-numeric:tabular-nums;margin:8px 0;}
+  .study-evo{display:flex;align-items:center;justify-content:center;gap:14px;background:rgba(255,255,255,.12);
+    border:2px solid rgba(255,255,255,.4);border-radius:16px;padding:12px;margin:0 0 12px;color:#fff;text-align:center;}
+  .study-evo .evo-cur,.study-evo .evo-next{font-size:38px;line-height:1.25;}
+  .study-evo .evo-cur b,.study-evo .evo-next b{font-size:12px;}
+  .study-evo .evo-arrow{font-size:20px;color:var(--yellow);font-weight:900;}
+  .study-evo .evo-next{opacity:.9;}
+  .study-sub{color:#fff;text-align:center;font-weight:700;font-size:12.5px;margin-bottom:10px;opacity:.95;line-height:1.5;}
+  .study-words{background:#fff;border:3px solid #222;border-radius:16px;padding:6px 14px;box-shadow:0 5px 0 rgba(0,0,0,.15);}
+  .sw-row{display:flex;justify-content:space-between;align-items:center;padding:9px 2px;border-bottom:1px dashed #e0e0e0;font-size:17px;}
+  .sw-row:last-child{border-bottom:none;}
+  .sw-row b{color:var(--blue-dark);font-weight:900;}
+  .sw-row span{color:var(--ink);font-weight:700;}
+  .kill-btn{position:fixed;bottom:16px;right:16px;z-index:210;background:linear-gradient(#8a94a6,#5f6878);
+    color:#fff;border:2px solid #222;border-radius:12px;padding:10px 14px;font-weight:800;font-size:13px;cursor:pointer;
+    box-shadow:0 3px 0 rgba(0,0,0,.3);}
+  .kill-btn:active{transform:translateY(2px);box-shadow:none;}
 </style>
 </head>
 <body>
@@ -371,6 +396,28 @@
       <button class="big-btn b-red" id="retryBtn"><span class="emoji">🔁</span><span>다시 도전</span></button>
       <button class="big-btn b-gray" id="homeBtn"><span class="emoji">🏠</span><span>홈으로</span></button>
     </div>
+  </section>
+
+  <!-- ============ 5분 학습 타이머 ============ -->
+  <section id="studyTimer" class="screen">
+    <div class="study-head">🧠 5분 암기 타임 <span id="studyChunkInfo" class="study-chunk"></span></div>
+    <div class="big-timer" id="bigTimer">05:00</div>
+    <div class="study-evo" id="studyEvo"></div>
+    <div class="study-sub">아래 단어를 외워요! 5분 뒤 퀴즈에서 3가지 방식(뜻·영단어·스펠링)으로 모두 맞혀야 다음으로 넘어가요.</div>
+    <div class="study-words" id="studyWords"></div>
+    <button class="kill-btn" id="killTimer">⛔ 끄기</button>
+  </section>
+
+  <!-- ============ 학습 퀴즈 ============ -->
+  <section id="study" class="screen">
+    <div class="battle-top"><span class="lvl" id="studyModeLabel">모드</span><span class="lvl" id="studyProg">0/0</span></div>
+    <div class="word-box" style="margin-top:6px">
+      <div class="lbl" id="sQLabel">이 단어의 뜻은?</div>
+      <div class="word" id="sQWord">—</div>
+      <div class="hint" id="sQHint"></div>
+    </div>
+    <div class="answer-area" id="studyAnswer"></div>
+    <button class="kill-btn" id="killQuiz">⛔ 끄기</button>
   </section>
 
   <!-- ============ 단어장 목록 (일자별) ============ -->
@@ -770,7 +817,13 @@ function renderSets(){
         <button class="set-play" data-date="${s.date}" data-m="en2ko">🔤 영→뜻</button>
         <button class="set-play" data-date="${s.date}" data-m="ko2en">💬 뜻→영</button>
       </div>
+      <button class="set-study" data-date="${s.date}">🕐 5분 포켓몬 학습 (7개씩 · 모두 클리어)</button>
     </div>`).join("");
+  box.querySelectorAll(".set-study").forEach(b=>b.addEventListener("click",()=>{
+    const set=loadSets().find(s=>s.date===b.dataset.date);
+    if(!set||!set.words.length){ alert("단어가 없어요."); return; }
+    startStudy(set.words);
+  }));
   box.querySelectorAll(".set-play").forEach(b=>b.addEventListener("click",()=>{
     const set=loadSets().find(s=>s.date===b.dataset.date);
     if(!set||!set.words.length){ alert("단어가 없어요."); return; }
@@ -960,6 +1013,102 @@ function endBattle(){
 $("#retryBtn").addEventListener("click",()=>startBattle(lastPool,lastOpts));
 $("#homeBtn").addEventListener("click",()=>{renderMy();renderPet();show("home");});
 $("#battleBack").addEventListener("click",()=>{ if(confirm("배틀을 그만할까요?")){ renderPet(); show("home"); } });
+
+/* ================= 5분 포켓몬 학습 타이머 ================= */
+const STUDY_PW="4321", STUDY_SECONDS=300, CHUNK=7;
+let study=null;
+function fmtTime(s){const m=Math.floor(s/60),ss=s%60;return String(m).padStart(2,"0")+":"+String(ss).padStart(2,"0");}
+function currentNextPoke(){ const s=stageOf(loadPoints()); return {cur:STAGES[s], next:s<STAGES.length-1?STAGES[s+1]:null, lv:s+1}; }
+function startStudy(setWords){
+  if(!setWords||!setWords.length){alert("단어가 없어요.");return;}
+  const words=shuffle(setWords);
+  const chunks=[]; for(let i=0;i<words.length;i+=CHUNK) chunks.push(words.slice(i,i+CHUNK));
+  study={ words, chunks, ci:0, gained:0, tid:null };
+  timerPhase();
+}
+function timerPhase(){
+  const chunk=study.chunks[study.ci], pk=currentNextPoke();
+  $("#studyChunkInfo").textContent=`${study.ci+1}/${study.chunks.length}묶음 · ${chunk.length}단어`;
+  $("#studyEvo").innerHTML=`<div class="evo-cur">${pk.cur.emoji}<br><b>${pk.cur.name}</b><br>Lv.${pk.lv}</div>`
+    + (pk.next?`<div class="evo-arrow">➜</div><div class="evo-next">${pk.next.emoji}<br><b>${pk.next.name}</b><br>다음 진화</div>`:`<div class="evo-arrow">🏆<br>최고레벨</div>`);
+  $("#studyWords").innerHTML=chunk.map(w=>`<div class="sw-row"><b>${w.en}</b><span>${w.ko}</span></div>`).join("");
+  study.remain=STUDY_SECONDS; $("#bigTimer").textContent=fmtTime(study.remain);
+  show("studyTimer");
+  clearInterval(study.tid);
+  study.tid=setInterval(()=>{
+    study.remain--; $("#bigTimer").textContent=fmtTime(study.remain);
+    if(study.remain<=0){ clearInterval(study.tid); quizPhase(); }
+  },1000);
+}
+function quizPhase(){
+  const chunk=study.chunks[study.ci], modes=["en2ko","ko2en","type"];
+  let q=[]; chunk.forEach(w=>modes.forEach(m=>q.push({q:w,mode:m})));
+  study.queue=shuffle(q); study.total=q.length;
+  show("study"); nextStudyQ();
+}
+function updateStudyProg(){ const done=study.total-study.queue.length; $("#studyProg").textContent=`✅ ${done}/${study.total}`; }
+function nextStudyQ(){
+  if(!study.queue.length){ chunkDone(); return; }
+  updateStudyProg();
+  const item=study.queue[0], q=item.q, area=$("#studyAnswer"); area.innerHTML=""; $("#sQHint").textContent="";
+  const labels={type:"⌨️ 스펠링 입력",en2ko:"🔤 뜻 고르기",ko2en:"💬 영단어 고르기"};
+  $("#studyModeLabel").textContent=labels[item.mode];
+  if(item.mode==="type"){
+    $("#sQLabel").textContent="뜻을 보고 영단어를 입력!";
+    $("#sQWord").textContent=q.ko; $("#sQWord").style.fontSize=q.ko.length>8?"26px":"34px";
+    area.innerHTML=`<input class="txt-input" id="sTypeInput" placeholder="영어로 입력..." autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false"><button class="submit-btn" id="sTypeSubmit">⚔️ 확인</button><div class="center" style="margin-top:8px"><span class="link" id="sHintBtn" style="color:#eee;opacity:.9">💡 힌트 (첫 글자)</span></div>`;
+    const inp=$("#sTypeInput"); setTimeout(()=>inp.focus(),150);
+    const go=()=>{ const v=(inp.value||"").trim().toLowerCase(); if(!v){inp.focus();return;} const r=v===q.en.toLowerCase(); if(!r)$("#sQHint").textContent="정답: "+q.en; studyAnswer(r); };
+    $("#sTypeSubmit").addEventListener("click",go); inp.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
+    $("#sHintBtn").addEventListener("click",()=>{$("#sQHint").textContent="시작: "+q.en[0].toUpperCase()+" · "+q.en.length+"글자";});
+  }else{
+    const key=item.mode==="en2ko"?"ko":"en";
+    $("#sQLabel").textContent=item.mode==="en2ko"?"이 단어의 뜻은?":"이 뜻의 영단어는?";
+    const shown=item.mode==="en2ko"?q.en:q.ko;
+    $("#sQWord").textContent=shown; $("#sQWord").style.fontSize=shown.length>8?"26px":"34px";
+    const wrongs=shuffle(study.words.filter(w=>w.en!==q.en)).slice(0,3);
+    const opts=shuffle([q,...wrongs]);
+    const grid=document.createElement("div"); grid.className="choices";
+    opts.forEach(o=>{ const b=document.createElement("div"); b.className="choice"; b.textContent=o[key];
+      b.addEventListener("click",()=>{ if(grid.dataset.done)return; grid.dataset.done="1";
+        const r=o.en===q.en; b.classList.add(r?"correct":"wrong");
+        if(!r) grid.querySelectorAll(".choice").forEach(c=>{if(c.textContent===q[key])c.classList.add("correct");});
+        studyAnswer(r); });
+      grid.appendChild(b); });
+    area.appendChild(grid);
+  }
+}
+function studyAnswer(right){
+  if(right){ study.queue.shift(); sndGood(); }
+  else{ study.queue.push(study.queue.shift()); sndBad(); }   // 틀리면 뒤로 보내 다시 풀기
+  updateStudyProg();
+  setTimeout(nextStudyQ, right?650:1200);
+}
+function chunkDone(){
+  const chunk=study.chunks[study.ci];
+  const room=Math.max(0,DAILY_CAP-loadDayEarned()), earned=Math.min(chunk.length,room);
+  if(earned>0){ addDayEarned(earned); savePoints(loadPoints()+earned); study.gained+=earned; }
+  study.ci++;
+  if(study.ci>=study.chunks.length){ studyFinish(); }
+  else{ alert(`👍 ${study.ci}묶음 클리어! (+${earned}P)\n다음 ${study.chunks[study.ci].length}단어 암기 타임!`); timerPhase(); }
+}
+function studyFinish(){
+  const g=study.gained;
+  $("#resultMon").textContent="🎓";
+  $("#resultTitle").textContent="학습 완료! 대단해요!";
+  $("#rCorrect").textContent=study.words.length; $("#rWrong").textContent="0"; $("#rCatch").textContent=study.chunks.length;
+  $("#ptsEarned").innerHTML=`🌱 학습으로 +${g}P 획득! (누적 ${loadPoints()}P)`;
+  $("#evolveMsg").textContent=""; $("#caughtTray").innerHTML='<span style="color:#999;font-weight:700">🎓 모든 묶음 클리어!</span>';
+  renderPet(); study=null; show("result");
+}
+function exitStudy(){
+  const pw=prompt("관리자 비밀번호를 입력하세요");
+  if(pw===null) return;
+  if(pw===STUDY_PW){ if(study&&study.tid)clearInterval(study.tid); study=null; renderPet(); show("home"); }
+  else alert("비밀번호가 틀렸어요.");
+}
+$("#killTimer").addEventListener("click",exitStudy);
+$("#killQuiz").addEventListener("click",exitStudy);
 
 /* ================= MUSIC CONTROL ================= */
 let bgmVol=parseFloat(localStorage.getItem("bgmVol")); if(isNaN(bgmVol))bgmVol=0.55;
