@@ -561,7 +561,7 @@ function addDayEarned(n){const cur=loadDayEarned();localStorage.setItem("growthD
 function stageOf(pts){let s=0;for(let i=0;i<THRESH.length;i++){if(pts>=THRESH[i])s=i;}return s;} // 0-based
 function renderPet(){
   const pts=loadPoints(), s=stageOf(pts), st=STAGES[s];
-  $("#petSprite").innerHTML=monSVG(s,58);
+  $("#petSprite").textContent=st.emoji;
   $("#petNameText").textContent=st.name;
   $("#petLv").textContent="Lv."+(s+1);
   $("#petPts").textContent=pts+" P";
@@ -577,7 +577,7 @@ function renderDex(){
     const cls=i===cur?"cur":(i<cur?"reached":"locked");
     const need=i===0?"시작":THRESH[i]+"P";
     return `<div class="dex-cell ${cls}">${i===cur?'<div class="dex-here">현재</div>':''}`
-      +`<div class="dex-emoji">${monSVG(i,40)}</div><div class="dex-lv">Lv.${i+1}</div>`
+      +`<div class="dex-emoji">${s.emoji}</div><div class="dex-lv">Lv.${i+1}</div>`
       +`<div class="dex-name">${s.name}</div><div class="dex-pts">${need}</div></div>`;
   }).join("");
   $("#dexNow").textContent=`현재 Lv.${cur+1} / ${STAGES.length}  ·  ${pts}P  ·  ${STAGES[cur].name}`;
