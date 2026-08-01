@@ -204,6 +204,31 @@
   .pts-earned{font-weight:900;color:var(--blue);font-size:17px;margin-top:10px;}
   .evolve-msg{margin-top:6px;font-weight:900;color:#e8710a;font-size:16px;}
   .evolve-msg.show{animation:pop2 .5s;}
+  #petCard{cursor:pointer;}
+  .pet-dex-hint{font-size:11.5px;font-weight:800;color:var(--blue);margin-top:8px;}
+
+  /* ---------- Pokedex 도감 ---------- */
+  .dex-now{color:#fff;text-align:center;font-weight:800;margin:0 0 12px;font-size:14px;
+    background:rgba(0,0,0,.28);padding:9px;border-radius:12px;}
+  .dex-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;position:relative;
+    max-height:66vh;overflow-y:auto;padding:10px 6px;background:rgba(255,255,255,.1);border-radius:16px;
+    border:2px solid rgba(255,255,255,.4);}
+  .dex-cell{background:#fff;border:3px solid #222;border-radius:14px;padding:9px 4px 7px;text-align:center;
+    position:relative;box-shadow:0 3px 0 rgba(0,0,0,.15);}
+  .dex-emoji{font-size:34px;line-height:1.1;}
+  .dex-lv{font-size:11px;font-weight:900;color:#8a94a6;margin-top:2px;}
+  .dex-name{font-size:11.5px;font-weight:800;color:var(--ink);word-break:keep-all;line-height:1.15;
+    min-height:27px;display:flex;align-items:center;justify-content:center;}
+  .dex-pts{font-size:10px;font-weight:800;color:var(--blue);}
+  .dex-cell.reached{background:linear-gradient(#fff,#e9fbe8);}
+  .dex-cell.locked{opacity:.7;background:#eef0f4;}
+  .dex-cell.locked .dex-emoji{filter:grayscale(1);opacity:.45;}
+  .dex-cell.locked .dex-name{color:#9aa3b2;}
+  .dex-cell.locked .dex-pts{color:#e8710a;}
+  .dex-cell.cur{border-color:var(--red);background:linear-gradient(#fff,#fff2d4);
+    box-shadow:0 0 0 3px rgba(238,21,21,.3),0 3px 0 rgba(0,0,0,.15);}
+  .dex-here{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;
+    font-size:10px;font-weight:900;padding:2px 8px;border-radius:8px;border:2px solid #fff;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -221,12 +246,13 @@
     <h1 class="title">포켓 단어 배틀</h1>
     <p class="subtitle">⚡ 사진 찍고 · 맞히고 · 잡아라! ⚡</p>
 
-    <div class="card pet-card">
+    <div class="card pet-card" id="petCard">
       <div class="pet-sprite" id="petSprite">🥚</div>
       <div class="pet-info">
         <div class="pet-name"><span id="petNameText">미스터리 에그</span> <span class="pet-lv" id="petLv">Lv.1</span></div>
         <div class="pet-bar"><i id="petBar"></i></div>
         <div class="pet-pts"><span id="petPts">0 P</span> <span id="petNext">다음까지 40P</span></div>
+        <div class="pet-dex-hint">📖 도감 보기 (50단계) ›</div>
       </div>
     </div>
 
@@ -344,6 +370,14 @@
     </div>
   </section>
 
+  <!-- ============ POKEDEX (도감) ============ -->
+  <section id="dex" class="screen">
+    <h1 class="title" style="font-size:22px">📖 포켓몬 도감</h1>
+    <p class="dex-now" id="dexNow">현재 Lv.1 / 50</p>
+    <div class="dex-grid" id="dexGrid"></div>
+    <span class="link" id="dexBack">← 홈으로</span>
+  </section>
+
 </div>
 
 <script>
@@ -390,18 +424,19 @@ function saveMy(){localStorage.setItem("myWords",JSON.stringify(myWords));update
 
 /* ================= 포인트 & 포켓몬 성장 (10단계) ================= */
 const STAGES=[
-  {emoji:"🥚",name:"미스터리 에그"},
-  {emoji:"🐛",name:"꼬물이"},
-  {emoji:"🐤",name:"삐약이"},
-  {emoji:"🦎",name:"도마리"},
-  {emoji:"🦊",name:"불꼬리"},
-  {emoji:"🐺",name:"실버울프"},
-  {emoji:"🐯",name:"타이가"},
-  {emoji:"🦁",name:"레오킹"},
-  {emoji:"🐲",name:"베이비드래곤"},
-  {emoji:"🐉",name:"레전드래곤"}
+  {emoji:"🥚",name:"미스터리 에그"},{emoji:"🐣",name:"갓깬둥이"},{emoji:"🐤",name:"삐약이"},{emoji:"🐥",name:"병아리몬"},{emoji:"🐛",name:"꼬물이"},
+  {emoji:"🐌",name:"느림보"},{emoji:"🐜",name:"개미크로"},{emoji:"🦗",name:"폴짝이"},{emoji:"🐝",name:"붕붕이"},{emoji:"🦋",name:"나빌레라"},
+  {emoji:"🐞",name:"무당이"},{emoji:"🕷️",name:"거미왕"},{emoji:"🦂",name:"독꼬리"},{emoji:"🦟",name:"윙윙마"},{emoji:"🪲",name:"딱정이"},
+  {emoji:"🐢",name:"느긋왕"},{emoji:"🦎",name:"도마리"},{emoji:"🐍",name:"스르륵"},{emoji:"🐸",name:"개굴킹"},{emoji:"🦕",name:"롱넥사우르"},
+  {emoji:"🦖",name:"렉스몬"},{emoji:"🐙",name:"문어대왕"},{emoji:"🦑",name:"오징어킹"},{emoji:"🦀",name:"집게몬"},{emoji:"🦞",name:"랍스타"},
+  {emoji:"🐡",name:"뽀글복어"},{emoji:"🐠",name:"니모피쉬"},{emoji:"🐟",name:"등푸른몬"},{emoji:"🐬",name:"돌고래스"},{emoji:"🦈",name:"샤크로드"},
+  {emoji:"🐋",name:"고래왕"},{emoji:"🦭",name:"물범이"},{emoji:"🦦",name:"수달몬"},{emoji:"🦫",name:"비버킹"},{emoji:"🦡",name:"오소리몬"},
+  {emoji:"🦝",name:"너구리몬"},{emoji:"🦨",name:"스컹크로"},{emoji:"🦔",name:"가시돌이"},{emoji:"🐇",name:"토끼점프"},{emoji:"🐺",name:"실버울프"},
+  {emoji:"🦊",name:"불꼬리"},{emoji:"🐆",name:"치타슬래시"},{emoji:"🐅",name:"타이가"},{emoji:"🦁",name:"레오킹"},{emoji:"🐘",name:"코끼왕"},
+  {emoji:"🦏",name:"코뿔로드"},{emoji:"🦛",name:"하마킹"},{emoji:"🦄",name:"유니콘"},{emoji:"🐲",name:"베이비드래곤"},{emoji:"🐉",name:"레전드래곤"}
 ];
-const THRESH=[0,40,100,180,300,460,680,960,1320,1800]; // 각 단계 누적 포인트
+// 누적 포인트 임계값: 레벨이 오를수록 필요량이 가팔라짐 (12 * n^1.2)
+const THRESH=(function(){const a=[0];for(let i=1;i<STAGES.length;i++){a[i]=a[i-1]+Math.round(12*Math.pow(i,1.2));}return a;})();
 function loadPoints(){const v=parseInt(localStorage.getItem("points"));return isNaN(v)?0:v;}
 function savePoints(p){localStorage.setItem("points",p);}
 function stageOf(pts){let s=0;for(let i=0;i<THRESH.length;i++){if(pts>=THRESH[i])s=i;}return s;} // 0-based
@@ -416,6 +451,19 @@ function renderPet(){
   else{ const cur=THRESH[s], next=THRESH[s+1]; pct=Math.round((pts-cur)/(next-cur)*100); nextTxt="다음까지 "+(next-pts)+"P"; }
   $("#petBar").style.width=pct+"%";
   $("#petNext").textContent=nextTxt;
+}
+function renderDex(){
+  const pts=loadPoints(), cur=stageOf(pts), grid=$("#dexGrid");
+  grid.innerHTML=STAGES.map((s,i)=>{
+    const cls=i===cur?"cur":(i<cur?"reached":"locked");
+    const need=i===0?"시작":THRESH[i]+"P";
+    return `<div class="dex-cell ${cls}">${i===cur?'<div class="dex-here">현재</div>':''}`
+      +`<div class="dex-emoji">${s.emoji}</div><div class="dex-lv">Lv.${i+1}</div>`
+      +`<div class="dex-name">${s.name}</div><div class="dex-pts">${need}</div></div>`;
+  }).join("");
+  $("#dexNow").textContent=`현재 Lv.${cur+1} / ${STAGES.length}  ·  ${pts}P  ·  ${STAGES[cur].name}`;
+  const curEl=grid.querySelector(".dex-cell.cur");
+  if(curEl) setTimeout(()=>{ grid.scrollTop=curEl.offsetTop-grid.clientHeight/2+curEl.clientHeight/2; },30);
 }
 
 /* ================= BGM (원곡 8비트 배경음악, 파일 없음) ================= */
@@ -479,6 +527,8 @@ $$("[data-mode]").forEach(b=>b.addEventListener("click",()=>{
   state.mode=b.dataset.mode; startBattle(BANK[state.diff]);
 }));
 $("#goCamera").addEventListener("click",()=>{renderMy();show("camera");});
+$("#petCard").addEventListener("click",()=>{renderDex();show("dex");});
+$("#dexBack").addEventListener("click",()=>{renderPet();show("home");});
 
 /* ================= CAMERA / OCR (여러 장 · 단어-뜻 쌍) ================= */
 $("#shootBtn").addEventListener("click",()=>$("#camInput").click());
