@@ -491,9 +491,14 @@ function preprocess(img){
 }
 async function getOcrWorker(){
   if(ocrWorker) return ocrWorker;
-  ocrWorker=await Tesseract.createWorker("eng+kor",1,{logger:m=>{
-    if(m.status==="recognizing text") $("#ocrStatus").textContent=`🔍 ${ocrIdx}/${ocrTotal} 인식 중 ${Math.round(m.progress*100)}%`;
-  }});
+  const logger=m=>{ if(m.status==="recognizing text") $("#ocrStatus").textContent=`🔍 ${ocrIdx}/${ocrTotal} 인식 중 ${Math.round(m.progress*100)}%`; };
+  try{
+    // 고정밀 모델(tessdata_best): 정확도↑, 첫 다운로드 큼(캐시됨)
+    ocrWorker=await Tesseract.createWorker("eng+kor",1,{ langPath:"https://tessdata.projectnaptha.com/4.0.0_best", logger });
+  }catch(e){
+    // 실패 시 기본 모델로 복귀
+    ocrWorker=await Tesseract.createWorker("eng+kor",1,{ logger });
+  }
   await ocrWorker.setParameters({ tessedit_pageseg_mode:"6", preserve_interword_spaces:"1" });
   return ocrWorker;
 }
@@ -511,7 +516,7 @@ $("#camInput").addEventListener("change", async e=>{
     return;
   }
 
-  st.textContent="⏳ 글자 인식 엔진 준비 중... (처음 한 번만 시간이 걸려요)";
+  st.textContent="⏳ 고정밀 인식엔진 준비 중... (처음 한 번만 다운로드, 이후 빨라져요)";
   let worker;
   try{ worker=await getOcrWorker(); }
   catch(err){ st.textContent="엔진을 불러오지 못했어요(인터넷 확인). 아래에 직접 입력해주세요."; addPairRow("","",true); return; }
