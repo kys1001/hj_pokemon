@@ -22,6 +22,23 @@
   .screen.active{display:block;}
   @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
+  /* ---------- Music control (top-right) ---------- */
+  #musicCtrl{position:fixed;top:10px;right:max(8px,calc(50% - 258px));z-index:200;
+    display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.38);
+    border:2px solid rgba(255,255,255,.65);border-radius:24px;padding:5px 12px 5px 6px;
+    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);box-shadow:0 3px 10px rgba(0,0,0,.3);}
+  #musicToggle{width:34px;height:34px;border-radius:50%;border:2px solid #222;cursor:pointer;
+    background:linear-gradient(var(--red),var(--red-dark));font-size:16px;line-height:1;padding:0;color:#fff;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 2px 0 rgba(0,0,0,.3);}
+  #musicToggle:active{transform:translateY(2px);box-shadow:none;}
+  #musicToggle.off{background:linear-gradient(#8a94a6,#5f6878);}
+  #volSlider{width:80px;height:6px;-webkit-appearance:none;appearance:none;border-radius:5px;
+    background:linear-gradient(90deg,var(--yellow),#fff);outline:none;cursor:pointer;}
+  #volSlider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:#fff;border:2px solid #222;cursor:pointer;}
+  #volSlider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid #222;cursor:pointer;}
+  @media (max-width:400px){ #volSlider{width:60px;} }
+
   /* ---------- Pokeball logo ---------- */
   .ball{width:74px;height:74px;border-radius:50%;position:relative;margin:0 auto;
     background:linear-gradient(#fff 50%,#fff 50%);
@@ -32,8 +49,6 @@
     background:#222;transform:translateY(-50%);}
   .ball .btn{position:absolute;top:50%;left:50%;width:22px;height:22px;border-radius:50%;
     background:#fff;border:5px solid #222;transform:translate(-50%,-50%);z-index:2;}
-  .ball.spin{animation:wobble 1s infinite;}
-  @keyframes wobble{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}
 
   h1.title{color:#fff;text-align:center;font-size:30px;margin:14px 0 2px;
     text-shadow:2px 2px 0 var(--blue-dark),-1px -1px 0 var(--blue-dark);letter-spacing:-1px;}
@@ -43,6 +58,7 @@
   .card{background:var(--panel);border-radius:20px;padding:18px;margin:0 0 16px;
     box-shadow:0 8px 0 rgba(0,0,0,.18),0 12px 24px rgba(0,0,0,.25);border:3px solid #222;}
   .card h2{margin:0 0 12px;font-size:17px;color:var(--ink);display:flex;align-items:center;gap:8px;}
+  .muted{color:#999;font-weight:700;}
 
   .btn-grid{display:grid;gap:10px;}
   .big-btn{border:none;border-radius:16px;padding:16px 14px;font-size:16px;font-weight:800;
@@ -55,7 +71,6 @@
   .b-blue{background:linear-gradient(var(--blue),var(--blue-dark));}
   .b-yellow{background:linear-gradient(var(--yellow),var(--yellow-dark));color:#3a2f00;}
   .b-green{background:linear-gradient(#5cc45c,#3a923a);}
-  .b-purple{background:linear-gradient(#9b59b6,#71368a);}
   .b-gray{background:linear-gradient(#8a94a6,#5f6878);}
 
   .diff-row{display:flex;gap:8px;}
@@ -69,7 +84,6 @@
   .d3.on{background:linear-gradient(var(--red),var(--red-dark));}
 
   /* ---------- Battle ---------- */
-  #battle{padding:0;}
   .battle-top{display:flex;justify-content:space-between;align-items:center;
     padding:12px 16px;color:#fff;font-weight:800;}
   .battle-top .lvl{background:rgba(0,0,0,.3);padding:4px 12px;border-radius:20px;font-size:13px;}
@@ -114,6 +128,7 @@
     color:#fff;background:linear-gradient(var(--red),var(--red-dark));box-shadow:0 5px 0 var(--red-dark);cursor:pointer;
     border:3px solid #7d0d0d;}
   .submit-btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--red-dark);}
+  .submit-btn.addall{background:linear-gradient(#5cc45c,#3a923a);border-color:#2f7d32;box-shadow:0 5px 0 #2f7d32;}
 
   .toast{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(0);
     background:rgba(0,0,0,.85);color:#fff;padding:16px 26px;border-radius:16px;font-size:22px;font-weight:900;
@@ -122,21 +137,28 @@
   @keyframes pop{0%{transform:translate(-50%,-50%) scale(0)}20%{transform:translate(-50%,-50%) scale(1.1)}
     80%{transform:translate(-50%,-50%) scale(1)}100%{transform:translate(-50%,-50%) scale(0)}}
 
-  .bar{display:flex;gap:8px;margin:16px 14px 0;}
-  .bar .stat{flex:1;background:rgba(255,255,255,.15);border-radius:12px;padding:8px;text-align:center;color:#fff;}
-  .bar .stat b{display:block;font-size:20px;}
-  .bar .stat span{font-size:11px;opacity:.85;}
-
   .caught-tray{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;min-height:30px;}
   .caught-tray .mon{font-size:24px;animation:pop2 .4s;}
   @keyframes pop2{from{transform:scale(0)}to{transform:scale(1)}}
 
-  /* camera */
-  .cam-preview{width:100%;border-radius:14px;border:3px solid #222;margin-top:10px;display:none;}
+  /* camera / OCR */
+  .cam-desc{margin:0 0 10px;font-size:13px;color:#555;font-weight:600;line-height:1.5;}
+  .thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .thumb{position:relative;width:66px;height:66px;border-radius:10px;overflow:hidden;border:3px solid #222;}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
   .ocr-status{margin-top:10px;font-weight:800;color:var(--blue-dark);text-align:center;min-height:20px;}
-  .field{margin-top:10px;}
-  .field label{font-weight:800;font-size:13px;display:block;margin-bottom:4px;color:#444;}
-  .field input{width:100%;padding:12px;border-radius:12px;border:3px solid #222;font-size:16px;font-weight:700;outline:none;}
+  .review-head{margin-top:14px;font-weight:800;font-size:14px;color:#444;}
+  #pairList{margin-top:8px;display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;padding:2px;}
+  .pair-row{display:flex;gap:6px;align-items:center;}
+  .pair-row input{padding:10px;border-radius:10px;border:2px solid #222;font-size:15px;font-weight:700;outline:none;min-width:0;}
+  .pair-row .p-en{flex:1.1;}
+  .pair-row .p-ko{flex:1;}
+  .pair-row .p-en:focus,.pair-row .p-ko:focus{border-color:var(--blue);}
+  .pair-row .p-del{width:34px;height:34px;flex:none;border-radius:9px;border:2px solid #b81212;
+    background:#ffe3e3;color:#c33;font-weight:900;cursor:pointer;font-size:14px;}
+  .add-row{width:100%;margin-top:10px;border:2px dashed #888;background:#f6f7fb;border-radius:12px;
+    padding:11px;font-weight:800;color:#555;cursor:pointer;font-size:14px;}
+
   .word-chip{display:inline-flex;align-items:center;gap:6px;background:#eef;border:2px solid #99b;
     border-radius:20px;padding:6px 12px;margin:4px;font-weight:800;font-size:14px;}
   .word-chip b{color:var(--blue-dark);}
@@ -150,10 +172,20 @@
   .progress-dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35);}
   .progress-dots i.done{background:var(--yellow);}
   .progress-dots i.cur{background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.4);}
+  .bar{display:flex;gap:8px;}
+  .bar .stat{flex:1;border-radius:12px;padding:8px;text-align:center;}
+  .bar .stat b{display:block;font-size:20px;}
+  .bar .stat span{font-size:11px;opacity:.85;}
 </style>
 </head>
 <body>
 <div id="app">
+
+  <!-- 음악 컨트롤 (우측 상단) -->
+  <div id="musicCtrl">
+    <button id="musicToggle" title="음악 켜기/끄기" aria-label="음악 켜기/끄기">🎵</button>
+    <input id="volSlider" type="range" min="0" max="100" value="55" aria-label="볼륨">
+  </div>
 
   <!-- ============ HOME ============ -->
   <section id="home" class="screen active">
@@ -190,8 +222,7 @@
 
     <div class="card">
       <h2>📸 내 단어 만들기 (촬영)</h2>
-      <p style="margin:0 0 8px;font-size:13px;color:#555;font-weight:600;">
-        아이패드 카메라로 단어를 찍으면 글자를 인식해 나만의 단어장에 추가돼요.</p>
+      <p class="cam-desc">아이패드 카메라로 단어장을 찍으면 <b>단어-뜻을 모두 찾아</b> 목록으로 만들어요. 여러 장도 OK!</p>
       <button class="big-btn b-green" id="goCamera" style="width:100%">
         <span class="emoji">📷</span><span>카메라로 단어 촬영하기<small id="myCount">내 단어 0개</small></span>
       </button>
@@ -202,31 +233,25 @@
   <section id="camera" class="screen">
     <h1 class="title" style="font-size:22px">📷 단어 촬영</h1>
     <div class="card">
-      <p style="margin:0 0 10px;font-size:13px;color:#555;font-weight:600;">
-        영어 단어가 크게 보이도록 찍어주세요. 인식 후 뜻을 입력하면 단어장에 추가됩니다.</p>
-      <input type="file" accept="image/*" capture="environment" id="camInput" class="hidden">
+      <p class="cam-desc">영어 단어와 뜻이 함께 있는 단어장을 찍어주세요. 단어-뜻 쌍을 자동으로 모두 찾아 아래 목록에 정리합니다. <b>여러 장</b>을 이어서 올릴 수 있어요.</p>
+      <input type="file" accept="image/*" multiple id="camInput" class="hidden">
       <button class="big-btn b-blue" id="shootBtn" style="width:100%">
-        <span class="emoji">📸</span><span>사진 찍기 / 이미지 선택</span>
+        <span class="emoji">📸</span><span>사진 찍기 / 여러 장 선택</span>
       </button>
-      <img id="camPreview" class="cam-preview" alt="preview">
+      <div id="thumbs" class="thumbs"></div>
       <div class="ocr-status" id="ocrStatus"></div>
 
-      <div id="confirmArea" class="hidden">
-        <div class="field">
-          <label>인식된 영단어 (수정 가능)</label>
-          <input type="text" id="wordField" placeholder="예: apple" autocapitalize="off" autocorrect="off">
-        </div>
-        <div class="field">
-          <label>뜻 (한글로 입력)</label>
-          <input type="text" id="meaningField" placeholder="예: 사과">
-        </div>
-        <button class="submit-btn" id="addWordBtn" style="background:linear-gradient(#5cc45c,#3a923a);border-color:#2f7d32;box-shadow:0 5px 0 #2f7d32;">✅ 단어장에 추가</button>
+      <div id="reviewArea" class="hidden">
+        <div class="review-head">인식된 단어-뜻 (<span id="pairCount">0</span>개) · 수정 가능</div>
+        <div id="pairList"></div>
+        <button class="add-row" id="addRowBtn">＋ 직접 한 줄 추가</button>
+        <button class="submit-btn addall" id="addAllBtn">✅ 모두 단어장에 추가</button>
       </div>
     </div>
 
     <div class="card">
       <h2>📒 내 단어장 (<span id="myList2">0</span>)</h2>
-      <div id="myChips" class="center" style="color:#999;font-weight:700;">아직 없어요. 첫 단어를 찍어보세요!</div>
+      <div id="myChips" class="center muted">아직 없어요. 첫 단어를 찍어보세요!</div>
       <div class="btn-grid" style="margin-top:14px" id="myPlayArea"></div>
     </div>
     <span class="link" id="camBack">← 홈으로</span>
@@ -284,21 +309,21 @@
 <script>
 /* ================= DATA ================= */
 const BANK = {
-  1: [ // 초급
+  1: [
     {en:"apple",ko:"사과"},{en:"book",ko:"책"},{en:"cat",ko:"고양이"},{en:"dog",ko:"개"},
     {en:"water",ko:"물"},{en:"school",ko:"학교"},{en:"friend",ko:"친구"},{en:"house",ko:"집"},
     {en:"happy",ko:"행복한"},{en:"run",ko:"달리다"},{en:"blue",ko:"파란색"},{en:"food",ko:"음식"},
     {en:"tree",ko:"나무"},{en:"star",ko:"별"},{en:"milk",ko:"우유"},{en:"hand",ko:"손"},
     {en:"open",ko:"열다"},{en:"fast",ko:"빠른"},{en:"rain",ko:"비"},{en:"night",ko:"밤"}
   ],
-  2: [ // 중급
+  2: [
     {en:"weather",ko:"날씨"},{en:"travel",ko:"여행하다"},{en:"language",ko:"언어"},{en:"culture",ko:"문화"},
     {en:"decide",ko:"결정하다"},{en:"describe",ko:"묘사하다"},{en:"invite",ko:"초대하다"},{en:"medicine",ko:"약, 의학"},
     {en:"exercise",ko:"운동, 연습"},{en:"machine",ko:"기계"},{en:"future",ko:"미래"},{en:"promise",ko:"약속하다"},
     {en:"village",ko:"마을"},{en:"famous",ko:"유명한"},{en:"careful",ko:"조심스러운"},{en:"forget",ko:"잊다"},
     {en:"success",ko:"성공"},{en:"protect",ko:"보호하다"},{en:"increase",ko:"증가하다"},{en:"prepare",ko:"준비하다"}
   ],
-  3: [ // 고급
+  3: [
     {en:"environment",ko:"환경"},{en:"opportunity",ko:"기회"},{en:"responsible",ko:"책임이 있는"},
     {en:"experience",ko:"경험"},{en:"achievement",ko:"성취, 업적"},{en:"immediately",ko:"즉시"},
     {en:"significant",ko:"중요한, 상당한"},{en:"consequence",ko:"결과"},{en:"appreciate",ko:"감사하다"},
@@ -312,7 +337,7 @@ const MONS = ["🐛","🦋","🐭","🐹","🐰","🦊","🐻","🐨","🐯","�
 const QUESTIONS = 10;
 
 /* ================= STATE ================= */
-let state = {diff:1, mode:"en2ko", queue:[], idx:0, correct:0, wrong:0, caught:[], answered:false};
+let state = {diff:1, mode:"en2ko", queue:[], idx:0, correct:0, wrong:0, caught:[], answered:false, allPool:[]};
 let myWords = loadMy();
 
 /* ================= HELPERS ================= */
@@ -323,15 +348,52 @@ function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor
 function loadMy(){try{return JSON.parse(localStorage.getItem("myWords")||"[]");}catch(e){return[];}}
 function saveMy(){localStorage.setItem("myWords",JSON.stringify(myWords));updateMyCounts();}
 
-/* ---- sound (WebAudio, no files) ---- */
-let actx=null;
+/* ================= BGM (원곡 8비트 배경음악, 파일 없음) ================= */
+const BGM=(function(){
+  let ctx=null,master=null,on=false,vol=0.55,timer=null,nextTime=0,step=0;
+  const BPM=132, EIGHTH=60/BPM/2;
+  const N={C3:130.81,D3:146.83,E3:164.81,G3:196.00,A2:110.00,F2:87.31,G2:98.00,
+    F4:349.23,G4:392.00,A4:440.00,B4:493.88,C5:523.25,D5:587.33,E5:659.25,F5:698.46,G5:783.99,A5:880.00};
+  const MEL=["G4","C5","E5","C5","G4","C5","E5","G5",
+             "D5","B4","D5","G5","D5","B4","G4","B4",
+             "A4","C5","E5","C5","A4","C5","E5","A5",
+             "F4","A4","C5","A4","F4","A4","C5","F5"];
+  const BASS=["C3","C3","G3","C3","G2","G2","D3","G2","A2","A2","E3","A2","F2","F2","C3","F2"];
+  function ensure(){ if(ctx)return;
+    ctx=new (window.AudioContext||window.webkitAudioContext)();
+    master=ctx.createGain(); master.gain.value=vol; master.connect(ctx.destination); }
+  function tone(freq,t,dur,type,gain){
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.type=type;o.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.linearRampToValueAtTime(gain,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g);g.connect(master);
+    o.start(t);o.stop(t+dur+0.03); }
+  function sched(){
+    while(nextTime<ctx.currentTime+0.15){
+      const m=MEL[step%MEL.length];
+      if(m)tone(N[m],nextTime,EIGHTH*0.9,"square",0.15);
+      if(step%2===0){ const b=BASS[(step/2)%BASS.length]; if(b)tone(N[b],nextTime,EIGHTH*1.7,"triangle",0.32); }
+      nextTime+=EIGHTH; step++;
+    } }
+  return {
+    ensure, getCtx(){ensure();return ctx;},
+    setVol(v){vol=v; if(master)master.gain.value=v;},
+    get on(){return on;},
+    start(){ ensure(); if(ctx.state==="suspended")ctx.resume(); if(timer)return; on=true; nextTime=ctx.currentTime+0.06; timer=setInterval(sched,25); },
+    stop(){ if(timer){clearInterval(timer);timer=null;} on=false; }
+  };
+})();
+
+/* ---- SFX (효과음) ---- */
 function beep(freq,dur,type){
-  try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
-    const o=actx.createOscillator(),g=actx.createGain();
-    o.type=type||"square";o.frequency.value=freq;o.connect(g);g.connect(actx.destination);
-    g.gain.setValueAtTime(.12,actx.currentTime);
-    g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+dur);
-    o.start();o.stop(actx.currentTime+dur);
+  try{ const ctx=BGM.getCtx(); if(ctx.state==="suspended")ctx.resume();
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.type=type||"square";o.frequency.value=freq;o.connect(g);g.connect(ctx.destination);
+    g.gain.setValueAtTime(.12,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+dur);
+    o.start();o.stop(ctx.currentTime+dur);
   }catch(e){}
 }
 function sndGood(){beep(660,.1);setTimeout(()=>beep(880,.15),90);}
@@ -348,63 +410,92 @@ $$("[data-mode]").forEach(b=>b.addEventListener("click",()=>{
 }));
 $("#goCamera").addEventListener("click",()=>{renderMy();show("camera");});
 
-/* ================= CAMERA / OCR ================= */
+/* ================= CAMERA / OCR (여러 장 · 단어-뜻 쌍) ================= */
 $("#shootBtn").addEventListener("click",()=>$("#camInput").click());
 $("#camBack").addEventListener("click",()=>show("home"));
 
-$("#camInput").addEventListener("change",async e=>{
-  const file=e.target.files[0]; if(!file)return;
+function addThumb(file){
   const url=URL.createObjectURL(file);
-  const img=$("#camPreview"); img.src=url; img.style.display="block";
-  $("#confirmArea").classList.add("hidden");
+  const d=document.createElement("div");d.className="thumb";
+  const img=document.createElement("img");img.src=url;d.appendChild(img);
+  $("#thumbs").appendChild(d);
+}
+function updatePairCount(){$("#pairCount").textContent=$$("#pairList .pair-row").length;}
+function addPairRow(en,ko,focus){
+  const row=document.createElement("div");row.className="pair-row";
+  const ie=document.createElement("input");ie.className="p-en";ie.value=en||"";ie.placeholder="영단어";
+  ie.autocapitalize="off";ie.autocorrect="off";ie.spellcheck=false;
+  const ik=document.createElement("input");ik.className="p-ko";ik.value=ko||"";ik.placeholder="뜻(한글)";
+  const del=document.createElement("button");del.className="p-del";del.textContent="✕";
+  del.addEventListener("click",()=>{row.remove();updatePairCount();});
+  row.appendChild(ie);row.appendChild(ik);row.appendChild(del);
+  $("#pairList").appendChild(row);
+  updatePairCount();
+  if(focus)ie.focus();
+}
+function parsePairs(text){
+  const out=[];
+  (text||"").split(/\r?\n/).forEach(line=>{
+    const en=((line.match(/[a-zA-Z][a-zA-Z'\-]{1,}/g))||[]).join(" ").trim().toLowerCase();
+    const ko=((line.match(/[가-힣]+/g))||[]).join(" ").trim();
+    if(en) out.push({en,ko});
+  });
+  return out;
+}
+
+$("#camInput").addEventListener("change", async e=>{
+  const files=[...e.target.files]; e.target.value="";
+  if(!files.length)return;
+  files.forEach(addThumb);
   const st=$("#ocrStatus");
+  $("#reviewArea").classList.remove("hidden");
+
   if(typeof Tesseract==="undefined"){
-    st.textContent="📸 사진을 확인했어요! 단어와 뜻을 입력해 단어장에 추가하세요.";
-    $("#wordField").value=""; $("#meaningField").value=""; $("#confirmArea").classList.remove("hidden");
-    $("#wordField").focus();
+    st.textContent="📸 사진을 첨부했어요! 아래에 단어와 뜻을 입력해 목록을 만든 뒤 추가하세요.";
+    if($$("#pairList .pair-row").length===0) addPairRow("","",true);
     return;
   }
-  st.textContent="🔍 글자 인식 중... 잠시만요";
-  try{
-    const res=await Tesseract.recognize(url,"eng",{
-      logger:m=>{ if(m.status==="recognizing text") st.textContent="🔍 인식 중 "+Math.round(m.progress*100)+"%"; }
-    });
-    let text=(res.data.text||"").replace(/[^a-zA-Z\s]/g," ");
-    let words=text.split(/\s+/).filter(w=>w.length>=2);
-    // 가장 긴 단어를 대표로
-    words.sort((a,b)=>b.length-a.length);
-    const guess=(words[0]||"").toLowerCase();
-    st.textContent = guess ? "✅ 인식 완료! 확인하고 뜻을 입력하세요." : "글자를 못 찾았어요. 직접 입력해주세요.";
-    $("#wordField").value=guess;
-    $("#meaningField").value="";
-    $("#confirmArea").classList.remove("hidden");
-    $("#meaningField").focus();
-  }catch(err){
-    st.textContent="인식 실패 😢 단어를 직접 입력해주세요.";
-    $("#confirmArea").classList.remove("hidden");
+
+  let n=0, before=$$("#pairList .pair-row").length;
+  for(const f of files){
+    n++;
+    st.textContent=`🔍 ${n}/${files.length}번째 사진 인식 중...`;
+    try{
+      const url=URL.createObjectURL(f);
+      const res=await Tesseract.recognize(url,"eng+kor",{logger:m=>{
+        if(m.status==="recognizing text") st.textContent=`🔍 ${n}/${files.length}번째 인식 중 ${Math.round(m.progress*100)}%`;
+      }});
+      parsePairs(res.data.text).forEach(p=>addPairRow(p.en,p.ko));
+    }catch(err){}
   }
+  const found=$$("#pairList .pair-row").length - before;
+  if(found>0){ st.textContent=`✅ 단어 ${found}개를 찾았어요! 확인·수정 후 추가하세요.`; }
+  else{ st.textContent="글자를 잘 못 찾았어요. 아래에 직접 입력해보세요."; addPairRow("","",true); }
 });
 
-$("#addWordBtn").addEventListener("click",()=>{
-  const en=$("#wordField").value.trim().toLowerCase();
-  const ko=$("#meaningField").value.trim();
-  if(!en){alert("영단어를 입력하세요.");return;}
-  if(!ko){alert("뜻을 입력하세요.");return;}
-  myWords=myWords.filter(w=>w.en!==en); // 중복 제거
-  myWords.push({en,ko});
+$("#addRowBtn").addEventListener("click",()=>addPairRow("","",true));
+
+$("#addAllBtn").addEventListener("click",()=>{
+  const rows=$$("#pairList .pair-row"); let added=0, skipped=0;
+  rows.forEach(r=>{
+    const en=r.querySelector(".p-en").value.trim().toLowerCase();
+    const ko=r.querySelector(".p-ko").value.trim();
+    if(en&&ko){ myWords=myWords.filter(w=>w.en!==en); myWords.push({en,ko}); added++; }
+    else if(en||ko){ skipped++; }
+  });
+  if(!added){alert("추가할 단어가 없어요. 영단어와 뜻을 모두 채워주세요.");return;}
   saveMy();
-  $("#confirmArea").classList.add("hidden");
-  $("#camPreview").style.display="none";
-  $("#ocrStatus").textContent="🎉 '"+en+"' 추가됨!";
-  sndCatch();
-  renderMy();
+  $("#pairList").innerHTML=""; $("#reviewArea").classList.add("hidden"); $("#thumbs").innerHTML="";
+  $("#ocrStatus").textContent=`🎉 ${added}개 추가 완료!`+(skipped?` (미완성 ${skipped}줄은 건너뜀)`:"");
+  sndCatch(); renderMy();
 });
 
 function renderMy(){
   $("#myList2").textContent=myWords.length;
   const box=$("#myChips");
-  if(myWords.length===0){box.innerHTML="아직 없어요. 첫 단어를 찍어보세요!";}
+  if(myWords.length===0){box.innerHTML="아직 없어요. 첫 단어를 찍어보세요!";box.className="center muted";}
   else{
+    box.className="";
     box.innerHTML=myWords.map((w,i)=>
       `<span class="word-chip"><b>${w.en}</b> ${w.ko} <span class="x" data-i="${i}">✕</span></span>`).join("");
     box.querySelectorAll(".x").forEach(x=>x.addEventListener("click",()=>{
@@ -430,7 +521,6 @@ let lastPool=BANK[1];
 function startBattle(pool){
   lastPool=pool;
   if(!pool||pool.length<1){alert("단어가 없어요.");return;}
-  // 객관식은 오답 보기용으로 최소 4개 필요 → 부족하면 기본 은행에서 보충
   let full = pool.slice();
   if((state.mode==="en2ko"||state.mode==="ko2en") && full.length<4){
     full = full.concat(BANK[1]).slice(0,Math.max(4,full.length));
@@ -454,7 +544,6 @@ function nextQuestion(){
   state.answered=false;
   renderDots();updateScore();
   const q=state.queue[state.idx];
-  // 새 포켓몬 등장
   const mon=MONS[(state.idx+state.diff*3)%MONS.length];
   $("#sprite").textContent=mon;
   $("#foe").className="foe";
@@ -483,7 +572,7 @@ function nextQuestion(){
     $("#qWord").textContent=q.en;
     $("#qWord").style.fontSize="34px";
     buildChoices(q,"ko");
-  } else { // ko2en
+  } else {
     $("#qLabel").textContent="이 뜻의 영단어는?";
     $("#qWord").textContent=q.ko;
     $("#qWord").style.fontSize = q.ko.length>8?"26px":"34px";
@@ -504,7 +593,6 @@ function buildChoices(q,key){
       const right=o.en===q.en;
       b.classList.add(right?"correct":"wrong");
       if(!right){
-        // 정답 표시
         grid.querySelectorAll(".choice").forEach(c=>{if(c.textContent===q[key])c.classList.add("correct");else c.classList.add("dim");});
       }
       resolveAnswer(right,q);
@@ -526,16 +614,13 @@ function checkType(){
 
 function resolveAnswer(right,q){
   state.answered=true;
-  const foe=$("#foe"),hp=$("#hp");
-  const toast=$("#toast");
+  const foe=$("#foe"),hp=$("#hp"),toast=$("#toast");
   if(right){
     state.correct++;
     foe.classList.add("hit");
     hp.style.width="0%";hp.className="crit";
     sndGood();
-    // 잡기!
-    const mon=$("#sprite").textContent;
-    state.caught.push(mon);
+    state.caught.push($("#sprite").textContent);
     toast.textContent="⚡ 명중! 잡았다!";
     toast.className="toast show";
     setTimeout(()=>{foe.classList.remove("hit");foe.classList.add("faint");},450);
@@ -575,4 +660,24 @@ function endBattle(){
 $("#retryBtn").addEventListener("click",()=>startBattle(lastPool));
 $("#homeBtn").addEventListener("click",()=>{renderMy();show("home");});
 $("#battleBack").addEventListener("click",()=>{ if(confirm("배틀을 그만할까요?")) show("home"); });
+
+/* ================= MUSIC CONTROL ================= */
+let bgmVol=parseFloat(localStorage.getItem("bgmVol")); if(isNaN(bgmVol))bgmVol=0.55;
+let bgmOn=localStorage.getItem("bgmOn"); bgmOn = bgmOn===null ? true : bgmOn==="1";
+BGM.setVol(bgmVol);
+$("#volSlider").value=Math.round(bgmVol*100);
+function updateMusicIcon(){const t=$("#musicToggle");t.textContent=bgmOn?"🎵":"🔇";t.classList.toggle("off",!bgmOn);}
+updateMusicIcon();
+$("#musicToggle").addEventListener("click",()=>{
+  bgmOn=!bgmOn;localStorage.setItem("bgmOn",bgmOn?"1":"0");
+  if(bgmOn)BGM.start();else BGM.stop();
+  updateMusicIcon();
+});
+$("#volSlider").addEventListener("input",e=>{
+  bgmVol=(+e.target.value)/100;BGM.setVol(bgmVol);localStorage.setItem("bgmVol",bgmVol);
+  if(bgmOn && bgmVol>0 && !BGM.on)BGM.start();
+});
+function _firstGesture(){ if(bgmOn)BGM.start(); window.removeEventListener("pointerdown",_firstGesture); window.removeEventListener("keydown",_firstGesture); }
+window.addEventListener("pointerdown",_firstGesture);
+window.addEventListener("keydown",_firstGesture);
 </script>
