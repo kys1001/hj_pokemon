@@ -1,0 +1,578 @@
+<style>
+  :root{
+    --red:#ee1515; --red-dark:#b81212; --blue:#2a75bb; --blue-dark:#1a4e7e;
+    --yellow:#ffcb05; --yellow-dark:#c7a008; --cream:#f5f2e8;
+    --ink:#2b2b3a; --green:#4caf50; --panel:#ffffff;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;
+    background:linear-gradient(160deg,#2a75bb 0%,#1a4e7e 100%);
+    color:var(--ink); overflow-x:hidden; user-select:none;
+    display:flex; justify-content:center; align-items:flex-start;
+    min-height:100%;
+  }
+  #app{
+    width:100%; max-width:520px; min-height:100vh; position:relative;
+    background:radial-gradient(circle at 50% 0%,#3a8fd4 0%,#1a4e7e 70%);
+    padding:0 0 40px 0; overflow:hidden;
+  }
+  .screen{display:none; padding:18px; animation:fade .35s ease;}
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* ---------- Pokeball logo ---------- */
+  .ball{width:74px;height:74px;border-radius:50%;position:relative;margin:0 auto;
+    background:linear-gradient(#fff 50%,#fff 50%);
+    border:5px solid #222;box-shadow:0 6px 16px rgba(0,0,0,.35);overflow:hidden;}
+  .ball::before{content:"";position:absolute;top:0;left:0;right:0;height:50%;
+    background:linear-gradient(var(--red),var(--red-dark));}
+  .ball::after{content:"";position:absolute;top:50%;left:0;right:0;height:5px;
+    background:#222;transform:translateY(-50%);}
+  .ball .btn{position:absolute;top:50%;left:50%;width:22px;height:22px;border-radius:50%;
+    background:#fff;border:5px solid #222;transform:translate(-50%,-50%);z-index:2;}
+  .ball.spin{animation:wobble 1s infinite;}
+  @keyframes wobble{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}
+
+  h1.title{color:#fff;text-align:center;font-size:30px;margin:14px 0 2px;
+    text-shadow:2px 2px 0 var(--blue-dark),-1px -1px 0 var(--blue-dark);letter-spacing:-1px;}
+  .subtitle{color:var(--yellow);text-align:center;font-weight:800;margin:0 0 18px;font-size:14px;
+    text-shadow:1px 1px 0 rgba(0,0,0,.3);}
+
+  .card{background:var(--panel);border-radius:20px;padding:18px;margin:0 0 16px;
+    box-shadow:0 8px 0 rgba(0,0,0,.18),0 12px 24px rgba(0,0,0,.25);border:3px solid #222;}
+  .card h2{margin:0 0 12px;font-size:17px;color:var(--ink);display:flex;align-items:center;gap:8px;}
+
+  .btn-grid{display:grid;gap:10px;}
+  .big-btn{border:none;border-radius:16px;padding:16px 14px;font-size:16px;font-weight:800;
+    color:#fff;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;
+    box-shadow:0 5px 0 rgba(0,0,0,.25);transition:transform .07s,box-shadow .07s;border:3px solid rgba(0,0,0,.25);}
+  .big-btn:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.25);}
+  .big-btn .emoji{font-size:26px;}
+  .big-btn small{display:block;font-weight:600;opacity:.9;font-size:12px;margin-top:2px;}
+  .b-red{background:linear-gradient(var(--red),var(--red-dark));}
+  .b-blue{background:linear-gradient(var(--blue),var(--blue-dark));}
+  .b-yellow{background:linear-gradient(var(--yellow),var(--yellow-dark));color:#3a2f00;}
+  .b-green{background:linear-gradient(#5cc45c,#3a923a);}
+  .b-purple{background:linear-gradient(#9b59b6,#71368a);}
+  .b-gray{background:linear-gradient(#8a94a6,#5f6878);}
+
+  .diff-row{display:flex;gap:8px;}
+  .diff-chip{flex:1;text-align:center;padding:12px 4px;border-radius:14px;font-weight:800;font-size:14px;
+    border:3px solid #222;cursor:pointer;background:#eee;box-shadow:0 4px 0 rgba(0,0,0,.2);transition:transform .07s;}
+  .diff-chip:active{transform:translateY(3px);}
+  .diff-chip.on{color:#fff;}
+  .diff-chip .star{display:block;font-size:11px;margin-top:2px;}
+  .d1.on{background:linear-gradient(var(--green),#2f7d32);}
+  .d2.on{background:linear-gradient(var(--blue),var(--blue-dark));}
+  .d3.on{background:linear-gradient(var(--red),var(--red-dark));}
+
+  /* ---------- Battle ---------- */
+  #battle{padding:0;}
+  .battle-top{display:flex;justify-content:space-between;align-items:center;
+    padding:12px 16px;color:#fff;font-weight:800;}
+  .battle-top .lvl{background:rgba(0,0,0,.3);padding:4px 12px;border-radius:20px;font-size:13px;}
+  .arena{margin:6px 14px 0;background:linear-gradient(#bfe8ff,#8fd3f4);
+    border-radius:20px;border:3px solid #222;padding:20px 16px 16px;position:relative;overflow:hidden;
+    box-shadow:0 8px 0 rgba(0,0,0,.2);}
+  .arena::after{content:"";position:absolute;bottom:0;left:0;right:0;height:46px;
+    background:linear-gradient(#8ad06a,#5fa843);border-top:3px solid #3f7a2c;}
+  .foe{position:relative;z-index:2;text-align:center;}
+  .foe .sprite{font-size:78px;line-height:1;filter:drop-shadow(3px 6px 3px rgba(0,0,0,.25));
+    display:inline-block;animation:bob 1.6s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .foe.hit .sprite{animation:shake .4s;}
+  @keyframes shake{0%,100%{transform:none}20%{transform:translateX(-10px) rotate(-6deg)}60%{transform:translateX(10px) rotate(6deg)}}
+  .foe.faint .sprite{animation:faint .8s forwards;}
+  @keyframes faint{to{transform:translateY(40px) scale(.3) rotate(90deg);opacity:0}}
+  .hpbar{background:#fff;border:2px solid #222;border-radius:10px;height:14px;width:150px;margin:8px auto 0;overflow:hidden;}
+  .hpbar>i{display:block;height:100%;width:100%;background:linear-gradient(#5fdd5f,#2fa02f);transition:width .5s;}
+  .hpbar>i.low{background:linear-gradient(#ffcf3f,#e8a400);}
+  .hpbar>i.crit{background:linear-gradient(#ff6b5f,#d63020);}
+  .foe-name{font-weight:900;color:#234;margin-top:4px;font-size:15px;}
+
+  .word-box{background:#fff;border:3px solid #222;border-radius:16px;margin:14px 14px 0;
+    padding:18px;text-align:center;box-shadow:0 5px 0 rgba(0,0,0,.15);}
+  .word-box .lbl{font-size:12px;font-weight:800;color:#888;letter-spacing:1px;}
+  .word-box .word{font-size:34px;font-weight:900;color:var(--ink);margin:6px 0 2px;word-break:break-word;}
+  .word-box .hint{font-size:14px;color:#c77;min-height:18px;font-weight:700;}
+
+  .answer-area{margin:14px;}
+  .txt-input{width:100%;font-size:24px;text-align:center;padding:14px;border-radius:14px;
+    border:3px solid #222;font-weight:800;outline:none;color:var(--ink);box-shadow:0 4px 0 rgba(0,0,0,.12);}
+  .txt-input:focus{border-color:var(--blue);}
+  .choices{display:grid;gap:10px;}
+  .choice{background:#fff;border:3px solid #222;border-radius:14px;padding:15px;font-size:18px;font-weight:800;
+    cursor:pointer;text-align:center;box-shadow:0 4px 0 rgba(0,0,0,.15);transition:transform .06s;color:var(--ink);}
+  .choice:active{transform:translateY(3px);}
+  .choice.correct{background:linear-gradient(var(--green),#2f7d32);color:#fff;border-color:#1e5620;}
+  .choice.wrong{background:linear-gradient(var(--red),var(--red-dark));color:#fff;border-color:#7d0d0d;}
+  .choice.dim{opacity:.5;}
+
+  .submit-btn{width:100%;margin-top:12px;border:none;border-radius:14px;padding:15px;font-size:18px;font-weight:900;
+    color:#fff;background:linear-gradient(var(--red),var(--red-dark));box-shadow:0 5px 0 var(--red-dark);cursor:pointer;
+    border:3px solid #7d0d0d;}
+  .submit-btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--red-dark);}
+
+  .toast{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(0);
+    background:rgba(0,0,0,.85);color:#fff;padding:16px 26px;border-radius:16px;font-size:22px;font-weight:900;
+    z-index:50;pointer-events:none;text-align:center;border:3px solid #fff;}
+  .toast.show{animation:pop .9s ease;}
+  @keyframes pop{0%{transform:translate(-50%,-50%) scale(0)}20%{transform:translate(-50%,-50%) scale(1.1)}
+    80%{transform:translate(-50%,-50%) scale(1)}100%{transform:translate(-50%,-50%) scale(0)}}
+
+  .bar{display:flex;gap:8px;margin:16px 14px 0;}
+  .bar .stat{flex:1;background:rgba(255,255,255,.15);border-radius:12px;padding:8px;text-align:center;color:#fff;}
+  .bar .stat b{display:block;font-size:20px;}
+  .bar .stat span{font-size:11px;opacity:.85;}
+
+  .caught-tray{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;min-height:30px;}
+  .caught-tray .mon{font-size:24px;animation:pop2 .4s;}
+  @keyframes pop2{from{transform:scale(0)}to{transform:scale(1)}}
+
+  /* camera */
+  .cam-preview{width:100%;border-radius:14px;border:3px solid #222;margin-top:10px;display:none;}
+  .ocr-status{margin-top:10px;font-weight:800;color:var(--blue-dark);text-align:center;min-height:20px;}
+  .field{margin-top:10px;}
+  .field label{font-weight:800;font-size:13px;display:block;margin-bottom:4px;color:#444;}
+  .field input{width:100%;padding:12px;border-radius:12px;border:3px solid #222;font-size:16px;font-weight:700;outline:none;}
+  .word-chip{display:inline-flex;align-items:center;gap:6px;background:#eef;border:2px solid #99b;
+    border-radius:20px;padding:6px 12px;margin:4px;font-weight:800;font-size:14px;}
+  .word-chip b{color:var(--blue-dark);}
+  .word-chip .x{color:#c33;cursor:pointer;font-weight:900;}
+
+  .link{color:#fff;text-align:center;display:block;margin-top:14px;font-weight:800;text-decoration:underline;cursor:pointer;opacity:.9;}
+  .hidden{display:none!important;}
+  .center{text-align:center;}
+  .result-mon{font-size:90px;text-align:center;margin:10px 0;animation:bob 1.6s infinite;}
+  .progress-dots{display:flex;gap:5px;justify-content:center;margin:10px 0 0;}
+  .progress-dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35);}
+  .progress-dots i.done{background:var(--yellow);}
+  .progress-dots i.cur{background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.4);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ HOME ============ -->
+  <section id="home" class="screen active">
+    <div class="ball"><i class="btn"></i></div>
+    <h1 class="title">포켓 단어 배틀</h1>
+    <p class="subtitle">⚡ 사진 찍고 · 맞히고 · 잡아라! ⚡</p>
+
+    <div class="card">
+      <h2>① 난이도 선택</h2>
+      <div class="diff-row">
+        <div class="diff-chip d1 on" data-diff="1">쉬움<span class="star">⭐ 초급</span></div>
+        <div class="diff-chip d2" data-diff="2">보통<span class="star">⭐⭐ 중급</span></div>
+        <div class="diff-chip d3" data-diff="3">어려움<span class="star">⭐⭐⭐ 고급</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>② 게임 모드 선택</h2>
+      <div class="btn-grid">
+        <button class="big-btn b-red" data-mode="type">
+          <span class="emoji">⌨️</span>
+          <span>단어 → 스펠링 입력<small>단어(뜻)를 보고 영단어를 직접 타이핑</small></span>
+        </button>
+        <button class="big-btn b-blue" data-mode="en2ko">
+          <span class="emoji">🔤</span>
+          <span>영어 → 뜻 맞히기<small>영단어를 보고 알맞은 뜻을 4개 중 선택</small></span>
+        </button>
+        <button class="big-btn b-yellow" data-mode="ko2en">
+          <span class="emoji">💬</span>
+          <span>뜻 → 영단어 맞히기<small>한글 뜻을 보고 알맞은 영단어를 선택</small></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📸 내 단어 만들기 (촬영)</h2>
+      <p style="margin:0 0 8px;font-size:13px;color:#555;font-weight:600;">
+        아이패드 카메라로 단어를 찍으면 글자를 인식해 나만의 단어장에 추가돼요.</p>
+      <button class="big-btn b-green" id="goCamera" style="width:100%">
+        <span class="emoji">📷</span><span>카메라로 단어 촬영하기<small id="myCount">내 단어 0개</small></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ CAMERA ============ -->
+  <section id="camera" class="screen">
+    <h1 class="title" style="font-size:22px">📷 단어 촬영</h1>
+    <div class="card">
+      <p style="margin:0 0 10px;font-size:13px;color:#555;font-weight:600;">
+        영어 단어가 크게 보이도록 찍어주세요. 인식 후 뜻을 입력하면 단어장에 추가됩니다.</p>
+      <input type="file" accept="image/*" capture="environment" id="camInput" class="hidden">
+      <button class="big-btn b-blue" id="shootBtn" style="width:100%">
+        <span class="emoji">📸</span><span>사진 찍기 / 이미지 선택</span>
+      </button>
+      <img id="camPreview" class="cam-preview" alt="preview">
+      <div class="ocr-status" id="ocrStatus"></div>
+
+      <div id="confirmArea" class="hidden">
+        <div class="field">
+          <label>인식된 영단어 (수정 가능)</label>
+          <input type="text" id="wordField" placeholder="예: apple" autocapitalize="off" autocorrect="off">
+        </div>
+        <div class="field">
+          <label>뜻 (한글로 입력)</label>
+          <input type="text" id="meaningField" placeholder="예: 사과">
+        </div>
+        <button class="submit-btn" id="addWordBtn" style="background:linear-gradient(#5cc45c,#3a923a);border-color:#2f7d32;box-shadow:0 5px 0 #2f7d32;">✅ 단어장에 추가</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📒 내 단어장 (<span id="myList2">0</span>)</h2>
+      <div id="myChips" class="center" style="color:#999;font-weight:700;">아직 없어요. 첫 단어를 찍어보세요!</div>
+      <div class="btn-grid" style="margin-top:14px" id="myPlayArea"></div>
+    </div>
+    <span class="link" id="camBack">← 홈으로</span>
+  </section>
+
+  <!-- ============ BATTLE ============ -->
+  <section id="battle" class="screen">
+    <div class="battle-top">
+      <span class="lvl" id="modeLabel">모드</span>
+      <span class="lvl" id="scoreLabel">⭐ 0</span>
+    </div>
+    <div class="progress-dots" id="dots"></div>
+
+    <div class="arena">
+      <div class="foe" id="foe">
+        <div class="sprite" id="sprite">❓</div>
+        <div class="foe-name" id="foeName">야생의 단어</div>
+        <div class="hpbar"><i id="hp"></i></div>
+      </div>
+      <div class="toast" id="toast"></div>
+    </div>
+
+    <div class="word-box">
+      <div class="lbl" id="qLabel">이 단어의 뜻은?</div>
+      <div class="word" id="qWord">—</div>
+      <div class="hint" id="qHint"></div>
+    </div>
+
+    <div class="answer-area" id="answerArea"></div>
+
+    <span class="link" id="battleBack">← 그만하기</span>
+  </section>
+
+  <!-- ============ RESULT ============ -->
+  <section id="result" class="screen">
+    <h1 class="title" style="margin-top:24px">배틀 종료!</h1>
+    <div class="result-mon" id="resultMon">🏆</div>
+    <div class="card center">
+      <h2 style="justify-content:center" id="resultTitle">잘했어요!</h2>
+      <div class="bar" style="margin:0">
+        <div class="stat" style="background:#eef;color:#234"><b id="rCorrect">0</b><span>맞힘</span></div>
+        <div class="stat" style="background:#fee;color:#234"><b id="rWrong">0</b><span>틀림</span></div>
+        <div class="stat" style="background:#efe;color:#234"><b id="rCatch">0</b><span>잡은 포켓몬</span></div>
+      </div>
+      <div class="caught-tray" id="caughtTray"></div>
+    </div>
+    <div class="btn-grid" style="margin:0 2px">
+      <button class="big-btn b-red" id="retryBtn"><span class="emoji">🔁</span><span>다시 도전</span></button>
+      <button class="big-btn b-gray" id="homeBtn"><span class="emoji">🏠</span><span>홈으로</span></button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ================= DATA ================= */
+const BANK = {
+  1: [ // 초급
+    {en:"apple",ko:"사과"},{en:"book",ko:"책"},{en:"cat",ko:"고양이"},{en:"dog",ko:"개"},
+    {en:"water",ko:"물"},{en:"school",ko:"학교"},{en:"friend",ko:"친구"},{en:"house",ko:"집"},
+    {en:"happy",ko:"행복한"},{en:"run",ko:"달리다"},{en:"blue",ko:"파란색"},{en:"food",ko:"음식"},
+    {en:"tree",ko:"나무"},{en:"star",ko:"별"},{en:"milk",ko:"우유"},{en:"hand",ko:"손"},
+    {en:"open",ko:"열다"},{en:"fast",ko:"빠른"},{en:"rain",ko:"비"},{en:"night",ko:"밤"}
+  ],
+  2: [ // 중급
+    {en:"weather",ko:"날씨"},{en:"travel",ko:"여행하다"},{en:"language",ko:"언어"},{en:"culture",ko:"문화"},
+    {en:"decide",ko:"결정하다"},{en:"describe",ko:"묘사하다"},{en:"invite",ko:"초대하다"},{en:"medicine",ko:"약, 의학"},
+    {en:"exercise",ko:"운동, 연습"},{en:"machine",ko:"기계"},{en:"future",ko:"미래"},{en:"promise",ko:"약속하다"},
+    {en:"village",ko:"마을"},{en:"famous",ko:"유명한"},{en:"careful",ko:"조심스러운"},{en:"forget",ko:"잊다"},
+    {en:"success",ko:"성공"},{en:"protect",ko:"보호하다"},{en:"increase",ko:"증가하다"},{en:"prepare",ko:"준비하다"}
+  ],
+  3: [ // 고급
+    {en:"environment",ko:"환경"},{en:"opportunity",ko:"기회"},{en:"responsible",ko:"책임이 있는"},
+    {en:"experience",ko:"경험"},{en:"achievement",ko:"성취, 업적"},{en:"immediately",ko:"즉시"},
+    {en:"significant",ko:"중요한, 상당한"},{en:"consequence",ko:"결과"},{en:"appreciate",ko:"감사하다"},
+    {en:"determine",ko:"결정하다, 알아내다"},{en:"tremendous",ko:"엄청난"},{en:"efficient",ko:"효율적인"},
+    {en:"reluctant",ko:"꺼리는"},{en:"generous",ko:"관대한"},{en:"inevitable",ko:"불가피한"},
+    {en:"perceive",ko:"인지하다"},{en:"sufficient",ko:"충분한"},{en:"anticipate",ko:"예상하다"},
+    {en:"emphasize",ko:"강조하다"},{en:"fundamental",ko:"근본적인"}
+  ]
+};
+const MONS = ["🐛","🦋","🐭","🐹","🐰","🦊","🐻","🐨","🐯","🦁","🐸","🐢","🐙","🐬","🦄","🐲","🦖","⚡","🔥","💧","🌿","🦇","🐝","🦅","🦉"];
+const QUESTIONS = 10;
+
+/* ================= STATE ================= */
+let state = {diff:1, mode:"en2ko", queue:[], idx:0, correct:0, wrong:0, caught:[], answered:false};
+let myWords = loadMy();
+
+/* ================= HELPERS ================= */
+const $ = s=>document.querySelector(s);
+const $$ = s=>document.querySelectorAll(s);
+function show(id){$$(".screen").forEach(s=>s.classList.remove("active"));$("#"+id).classList.add("active");window.scrollTo(0,0);}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function loadMy(){try{return JSON.parse(localStorage.getItem("myWords")||"[]");}catch(e){return[];}}
+function saveMy(){localStorage.setItem("myWords",JSON.stringify(myWords));updateMyCounts();}
+
+/* ---- sound (WebAudio, no files) ---- */
+let actx=null;
+function beep(freq,dur,type){
+  try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.type=type||"square";o.frequency.value=freq;o.connect(g);g.connect(actx.destination);
+    g.gain.setValueAtTime(.12,actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+dur);
+    o.start();o.stop(actx.currentTime+dur);
+  }catch(e){}
+}
+function sndGood(){beep(660,.1);setTimeout(()=>beep(880,.15),90);}
+function sndBad(){beep(180,.25,"sawtooth");}
+function sndCatch(){beep(520,.1);setTimeout(()=>beep(700,.1),100);setTimeout(()=>beep(990,.25),210);}
+
+/* ================= HOME ================= */
+$$(".diff-chip").forEach(c=>c.addEventListener("click",()=>{
+  $$(".diff-chip").forEach(x=>x.classList.remove("on"));
+  c.classList.add("on"); state.diff=+c.dataset.diff; beep(500,.05);
+}));
+$$("[data-mode]").forEach(b=>b.addEventListener("click",()=>{
+  state.mode=b.dataset.mode; startBattle(BANK[state.diff]);
+}));
+$("#goCamera").addEventListener("click",()=>{renderMy();show("camera");});
+
+/* ================= CAMERA / OCR ================= */
+$("#shootBtn").addEventListener("click",()=>$("#camInput").click());
+$("#camBack").addEventListener("click",()=>show("home"));
+
+$("#camInput").addEventListener("change",async e=>{
+  const file=e.target.files[0]; if(!file)return;
+  const url=URL.createObjectURL(file);
+  const img=$("#camPreview"); img.src=url; img.style.display="block";
+  $("#confirmArea").classList.add("hidden");
+  const st=$("#ocrStatus");
+  if(typeof Tesseract==="undefined"){
+    st.textContent="📸 사진을 확인했어요! 단어와 뜻을 입력해 단어장에 추가하세요.";
+    $("#wordField").value=""; $("#meaningField").value=""; $("#confirmArea").classList.remove("hidden");
+    $("#wordField").focus();
+    return;
+  }
+  st.textContent="🔍 글자 인식 중... 잠시만요";
+  try{
+    const res=await Tesseract.recognize(url,"eng",{
+      logger:m=>{ if(m.status==="recognizing text") st.textContent="🔍 인식 중 "+Math.round(m.progress*100)+"%"; }
+    });
+    let text=(res.data.text||"").replace(/[^a-zA-Z\s]/g," ");
+    let words=text.split(/\s+/).filter(w=>w.length>=2);
+    // 가장 긴 단어를 대표로
+    words.sort((a,b)=>b.length-a.length);
+    const guess=(words[0]||"").toLowerCase();
+    st.textContent = guess ? "✅ 인식 완료! 확인하고 뜻을 입력하세요." : "글자를 못 찾았어요. 직접 입력해주세요.";
+    $("#wordField").value=guess;
+    $("#meaningField").value="";
+    $("#confirmArea").classList.remove("hidden");
+    $("#meaningField").focus();
+  }catch(err){
+    st.textContent="인식 실패 😢 단어를 직접 입력해주세요.";
+    $("#confirmArea").classList.remove("hidden");
+  }
+});
+
+$("#addWordBtn").addEventListener("click",()=>{
+  const en=$("#wordField").value.trim().toLowerCase();
+  const ko=$("#meaningField").value.trim();
+  if(!en){alert("영단어를 입력하세요.");return;}
+  if(!ko){alert("뜻을 입력하세요.");return;}
+  myWords=myWords.filter(w=>w.en!==en); // 중복 제거
+  myWords.push({en,ko});
+  saveMy();
+  $("#confirmArea").classList.add("hidden");
+  $("#camPreview").style.display="none";
+  $("#ocrStatus").textContent="🎉 '"+en+"' 추가됨!";
+  sndCatch();
+  renderMy();
+});
+
+function renderMy(){
+  $("#myList2").textContent=myWords.length;
+  const box=$("#myChips");
+  if(myWords.length===0){box.innerHTML="아직 없어요. 첫 단어를 찍어보세요!";}
+  else{
+    box.innerHTML=myWords.map((w,i)=>
+      `<span class="word-chip"><b>${w.en}</b> ${w.ko} <span class="x" data-i="${i}">✕</span></span>`).join("");
+    box.querySelectorAll(".x").forEach(x=>x.addEventListener("click",()=>{
+      myWords.splice(+x.dataset.i,1);saveMy();renderMy();
+    }));
+  }
+  const play=$("#myPlayArea");
+  if(myWords.length>=1){
+    play.innerHTML=`
+      <button class="big-btn b-red"  data-mymode="type"><span class="emoji">⌨️</span><span>스펠링 입력으로 연습</span></button>
+      <button class="big-btn b-blue" data-mymode="en2ko"><span class="emoji">🔤</span><span>영어→뜻 맞히기</span></button>
+      <button class="big-btn b-yellow" data-mymode="ko2en"><span class="emoji">💬</span><span>뜻→영단어 맞히기</span></button>`;
+    play.querySelectorAll("[data-mymode]").forEach(b=>b.addEventListener("click",()=>{
+      state.mode=b.dataset.mymode; startBattle(myWords);
+    }));
+  }else{play.innerHTML="";}
+}
+function updateMyCounts(){$("#myCount").textContent="내 단어 "+myWords.length+"개";}
+updateMyCounts();
+
+/* ================= BATTLE ENGINE ================= */
+let lastPool=BANK[1];
+function startBattle(pool){
+  lastPool=pool;
+  if(!pool||pool.length<1){alert("단어가 없어요.");return;}
+  // 객관식은 오답 보기용으로 최소 4개 필요 → 부족하면 기본 은행에서 보충
+  let full = pool.slice();
+  if((state.mode==="en2ko"||state.mode==="ko2en") && full.length<4){
+    full = full.concat(BANK[1]).slice(0,Math.max(4,full.length));
+  }
+  state.queue=shuffle(pool).slice(0,Math.min(QUESTIONS,pool.length));
+  state.allPool=full;
+  state.idx=0;state.correct=0;state.wrong=0;state.caught=[];
+  const labels={type:"⌨️ 스펠링 입력",en2ko:"🔤 영어→뜻",ko2en:"💬 뜻→영단어"};
+  $("#modeLabel").textContent=labels[state.mode];
+  renderDots();
+  show("battle");
+  nextQuestion();
+}
+function renderDots(){
+  $("#dots").innerHTML=state.queue.map((_,i)=>`<i class="${i<state.idx?'done':i===state.idx?'cur':''}"></i>`).join("");
+}
+function updateScore(){$("#scoreLabel").textContent="⭐ "+state.correct;}
+
+function nextQuestion(){
+  if(state.idx>=state.queue.length){endBattle();return;}
+  state.answered=false;
+  renderDots();updateScore();
+  const q=state.queue[state.idx];
+  // 새 포켓몬 등장
+  const mon=MONS[(state.idx+state.diff*3)%MONS.length];
+  $("#sprite").textContent=mon;
+  $("#foe").className="foe";
+  $("#foeName").textContent="Lv."+(state.diff*5+state.idx)+" 야생 단어";
+  const hp=$("#hp");hp.style.width="100%";hp.className="";
+  $("#qHint").textContent="";
+  const area=$("#answerArea");area.innerHTML="";
+
+  if(state.mode==="type"){
+    $("#qLabel").textContent="이 뜻의 영단어를 입력하세요!";
+    $("#qWord").textContent=q.ko;
+    $("#qWord").style.fontSize = q.ko.length>8?"26px":"34px";
+    area.innerHTML=`
+      <input class="txt-input" id="typeInput" placeholder="영어로 입력..." autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
+      <button class="submit-btn" id="typeSubmit">⚔️ 공격!</button>
+      <div class="center" style="margin-top:8px"><span class="link" id="hintBtn" style="color:#eee;opacity:.9">💡 힌트 (첫 글자)</span></div>`;
+    const inp=$("#typeInput");
+    setTimeout(()=>inp.focus(),200);
+    $("#typeSubmit").addEventListener("click",()=>checkType());
+    inp.addEventListener("keydown",e=>{if(e.key==="Enter")checkType();});
+    $("#hintBtn").addEventListener("click",()=>{
+      $("#qHint").textContent="시작: "+q.en[0].toUpperCase()+" · "+q.en.length+"글자";
+    });
+  } else if(state.mode==="en2ko"){
+    $("#qLabel").textContent="이 단어의 뜻은?";
+    $("#qWord").textContent=q.en;
+    $("#qWord").style.fontSize="34px";
+    buildChoices(q,"ko");
+  } else { // ko2en
+    $("#qLabel").textContent="이 뜻의 영단어는?";
+    $("#qWord").textContent=q.ko;
+    $("#qWord").style.fontSize = q.ko.length>8?"26px":"34px";
+    buildChoices(q,"en");
+  }
+}
+
+function buildChoices(q,key){
+  const pool=state.allPool.length>=4?state.allPool:state.allPool.concat(BANK[1]);
+  const wrongs=shuffle(pool.filter(w=>w.en!==q.en)).slice(0,3);
+  const opts=shuffle([q,...wrongs]);
+  const area=$("#answerArea");
+  const grid=document.createElement("div");grid.className="choices";
+  opts.forEach(o=>{
+    const b=document.createElement("div");b.className="choice";b.textContent=o[key];
+    b.addEventListener("click",()=>{
+      if(state.answered)return;
+      const right=o.en===q.en;
+      b.classList.add(right?"correct":"wrong");
+      if(!right){
+        // 정답 표시
+        grid.querySelectorAll(".choice").forEach(c=>{if(c.textContent===q[key])c.classList.add("correct");else c.classList.add("dim");});
+      }
+      resolveAnswer(right,q);
+    });
+    grid.appendChild(b);
+  });
+  area.appendChild(grid);
+}
+
+function checkType(){
+  if(state.answered)return;
+  const q=state.queue[state.idx];
+  const val=($("#typeInput").value||"").trim().toLowerCase();
+  if(!val){$("#typeInput").focus();return;}
+  const right=val===q.en.toLowerCase();
+  if(!right)$("#qHint").textContent="정답: "+q.en;
+  resolveAnswer(right,q);
+}
+
+function resolveAnswer(right,q){
+  state.answered=true;
+  const foe=$("#foe"),hp=$("#hp");
+  const toast=$("#toast");
+  if(right){
+    state.correct++;
+    foe.classList.add("hit");
+    hp.style.width="0%";hp.className="crit";
+    sndGood();
+    // 잡기!
+    const mon=$("#sprite").textContent;
+    state.caught.push(mon);
+    toast.textContent="⚡ 명중! 잡았다!";
+    toast.className="toast show";
+    setTimeout(()=>{foe.classList.remove("hit");foe.classList.add("faint");},450);
+    setTimeout(()=>{sndCatch();},600);
+  }else{
+    state.wrong++;
+    foe.classList.add("hit");
+    hp.style.width="60%";hp.className="low";
+    sndBad();
+    toast.textContent="💨 빗나감!";
+    toast.className="toast show";
+    setTimeout(()=>foe.classList.remove("hit"),450);
+  }
+  updateScore();
+  setTimeout(()=>{toast.className="toast";state.idx++;nextQuestion();}, right?1250:1500);
+}
+
+/* ================= RESULT ================= */
+function endBattle(){
+  $("#rCorrect").textContent=state.correct;
+  $("#rWrong").textContent=state.wrong;
+  $("#rCatch").textContent=state.caught.length;
+  const total=state.correct+state.wrong;
+  const rate=total?state.correct/total:0;
+  let mon,title;
+  if(rate>=0.9){mon="🏆";title="포켓몬 마스터! 완벽해요!";}
+  else if(rate>=0.7){mon="🥇";title="훌륭해요! 잘했어요!";}
+  else if(rate>=0.5){mon="🎖️";title="좋아요! 조금만 더!";}
+  else{mon="🌱";title="괜찮아요! 다시 도전!";}
+  $("#resultMon").textContent=mon;
+  $("#resultTitle").textContent=title;
+  $("#caughtTray").innerHTML=state.caught.map(m=>`<span class="mon">${m}</span>`).join("")||
+    '<span style="color:#999;font-weight:700">잡은 포켓몬이 없어요</span>';
+  if(rate>=0.7)sndCatch();
+  show("result");
+}
+$("#retryBtn").addEventListener("click",()=>startBattle(lastPool));
+$("#homeBtn").addEventListener("click",()=>{renderMy();show("home");});
+$("#battleBack").addEventListener("click",()=>{ if(confirm("배틀을 그만할까요?")) show("home"); });
+</script>
