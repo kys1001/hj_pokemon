@@ -244,7 +244,7 @@
     <h1 class="title" style="font-size:22px">📷 단어 촬영</h1>
     <div class="card">
       <p class="cam-desc">영어 단어와 뜻이 함께 있는 단어장을 찍어주세요. 단어-뜻 쌍을 자동으로 모두 찾아 아래 목록에 정리합니다. <b>여러 장</b>을 이어서 올릴 수 있어요.</p>
-      <p class="tip-box">💡 <b>인식 잘 되는 법</b> · 밝은 곳에서 · 글자가 화면에 크고 꽉 차게 · 정면에서 · 흔들림 없이. (사진은 자동으로 확대·선명화 보정됩니다)</p>
+      <p class="tip-box">💡 <b>인식 잘 되는 법</b><br>· <b>책을 똑바로(수평) 정면에서</b> — 기울거나 돌아가면 인식 급락<br>· 단어 부분이 화면에 크고 또렷하게, 밝은 곳에서<br>· 손글씨·형광펜이 적은 페이지가 유리<br>· 예문·발음기호[ ]는 자동으로 걸러냅니다(표제어만 추출)</p>
       <input type="file" accept="image/*" multiple id="camInput" class="hidden">
       <button class="big-btn b-blue" id="shootBtn" style="width:100%">
         <span class="emoji">📸</span><span>사진 찍기 / 여러 장 선택</span>
@@ -444,12 +444,21 @@ function addPairRow(en,ko,focus){
   updatePairCount();
   if(focus)ie.focus();
 }
+const POS=new Set(["명","형","동","부","대","전","접","감","수","관","조"]);
 function parsePairs(text){
-  const out=[];
-  (text||"").split(/\r?\n/).forEach(line=>{
-    const en=((line.match(/[a-zA-Z][a-zA-Z'\-]{1,}/g))||[]).join(" ").trim().toLowerCase();
-    const ko=((line.match(/[가-힣]+/g))||[]).join(" ").trim();
-    if(en) out.push({en,ko});
+  const out=[], seen=new Set();
+  (text||"").split(/\r?\n/).forEach(raw=>{
+    let line=(raw||"").replace(/\[[^\]]*\]/g," ");        // 발음기호 [piːs] 제거
+    if(!line.trim()) return;
+    const enAll=(line.match(/[A-Za-z][A-Za-z'\-]+/g))||[];
+    const ko=((line.match(/[가-힣]+/g))||[]).filter(t=>!POS.has(t)).join(" ").trim(); // 품사표시 제거
+    if(enAll.length>=3) return;                           // 영어 3단어 이상 = 예문 → 스킵
+    // 쓰레기 토큰 컷: 3자 이상 + 모음 포함(발음기호/자음덩어리 제거)
+    const clean=enAll.map(t=>t.toLowerCase()).filter(t=>t.length>=3 && /[aeiouy]/.test(t));
+    const en=clean[0]||"";                                // 표제어(보통 첫 단어)
+    if(!en) return;                                       // 표제어 못 찾으면 스킵
+    if(seen.has(en)) return; seen.add(en);                // 중복 제거
+    out.push({en, ko});
   });
   return out;
 }
