@@ -7,7 +7,8 @@ async function readJson(req){
   return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
 }
 async function kv(cmd){
-  const url=process.env.KV_REST_API_URL, tok=process.env.KV_REST_API_TOKEN;
+  const url=process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const tok=process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
   if(!url || !tok) throw new Error("연동 저장소가 설정되지 않았습니다 (KV_REST_API_URL / KV_REST_API_TOKEN)");
   const r=await fetch(url, { method:"POST", headers:{ Authorization:"Bearer "+tok, "Content-Type":"application/json" }, body:JSON.stringify(cmd) });
   const j=await r.json();
