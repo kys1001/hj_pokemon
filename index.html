@@ -210,12 +210,18 @@
   /* ---------- Pokedex 도감 ---------- */
   .dex-now{color:#fff;text-align:center;font-weight:800;margin:0 0 12px;font-size:14px;
     background:rgba(0,0,0,.28);padding:9px;border-radius:12px;}
+  .timer-set{display:flex;align-items:center;justify-content:center;gap:6px;color:#fff;font-weight:800;
+    background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.4);border-radius:12px;padding:8px;margin:0 0 12px;font-size:14px;}
+  .timer-set input{width:56px;text-align:center;font-size:16px;font-weight:900;padding:6px;border-radius:8px;border:2px solid #222;}
+  .timer-set span{font-size:11px;opacity:.8;font-weight:700;}
   .dex-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;position:relative;
     max-height:66vh;overflow-y:auto;padding:10px 6px;background:rgba(255,255,255,.1);border-radius:16px;
     border:2px solid rgba(255,255,255,.4);}
   .dex-cell{background:#fff;border:3px solid #222;border-radius:14px;padding:9px 4px 7px;text-align:center;
     position:relative;box-shadow:0 3px 0 rgba(0,0,0,.15);}
   .dex-emoji{font-size:34px;line-height:1.1;}
+  .dex-emoji svg,.evo-cur svg,.evo-next svg{display:block;margin:0 auto;}
+  .pet-sprite svg{display:block;}
   .dex-lv{font-size:11px;font-weight:900;color:#8a94a6;margin-top:2px;}
   .dex-name{font-size:11.5px;font-weight:800;color:var(--ink);word-break:keep-all;line-height:1.15;
     min-height:27px;display:flex;align-items:center;justify-content:center;}
@@ -397,10 +403,9 @@
 
   <!-- ============ 5분 학습 타이머 ============ -->
   <section id="studyTimer" class="screen">
-    <div class="study-head">🧠 5분 암기 타임 <span id="studyChunkInfo" class="study-chunk"></span></div>
-    <div class="big-timer" id="bigTimer">05:00</div>
-    <div class="study-evo" id="studyEvo"></div>
-    <div class="study-sub">아래 단어를 외워요! 5분 뒤 퀴즈에서 3가지 방식(뜻·영단어·스펠링)으로 모두 맞혀야 다음으로 넘어가요.</div>
+    <div class="study-head">🧠 암기 타임 <span id="studyChunkInfo" class="study-chunk"></span></div>
+    <div class="big-timer" id="bigTimer">10:00</div>
+    <div class="study-sub">아래 단어를 외워요! 타이머가 끝나면 퀴즈에서 3가지 방식(뜻·영단어·스펠링)으로 모두 맞혀야 다음으로 넘어가요.</div>
     <div class="study-words" id="studyWords"></div>
     <button class="kill-btn" id="killTimer">⛔ 끄기</button>
   </section>
@@ -420,7 +425,8 @@
   <!-- ============ 단어장 목록 (일자별) ============ -->
   <section id="sets" class="screen">
     <h1 class="title" style="font-size:22px">📚 내 단어장 (일자별)</h1>
-    <p class="dex-now" style="margin-bottom:12px">날짜별 단어장을 골라 퀴즈! 퀴즈는 그 날 올린 단어로만 출제돼요.</p>
+    <p class="dex-now" style="margin-bottom:10px">날짜별 단어장을 골라 퀴즈! 퀴즈는 그 날 올린 단어로만 출제돼요.</p>
+    <div class="timer-set">⏱ 암기 타이머 <input type="number" id="studyMinInput" min="1" max="60" value="10">분 <span>(직접 설정)</span></div>
     <div id="setsList"></div>
     <span class="link" id="setsBack">← 홈으로</span>
   </section>
@@ -519,6 +525,33 @@ const STAGES=[
 ];
 // 누적 임계값: 1문제 정답 = 1P. 레벨업에 필요한 문제 수가 100→150→200…씩 증가
 const THRESH=(function(){const a=[0];for(let i=1;i<STAGES.length;i++){a[i]=a[i-1]+(100+(i-1)*50);}return a;})();
+
+/* ===== 오리지널 몬스터 SVG 생성기 (단계별 고유·저작권 무관) ===== */
+function monSVG(i, size){
+  size=size||48;
+  const R=(n)=>{const x=Math.sin((i*13.13+n*7.7+1))*10000;return x-Math.floor(x);};
+  const hue=(i*33)%360, tier=Math.floor(i/12);
+  const body=`hsl(${hue},68%,56%)`, dark=`hsl(${hue},68%,38%)`, light=`hsl(${(hue+25)%360},85%,87%)`, acc=`hsl(${(hue+180)%360},75%,58%)`;
+  const earType=Math.floor(R(1)*3), eyeType=Math.floor(R(2)*3);
+  const hasHorn=R(3)>0.55, hasSpike=R(4)>0.5, hasTail=R(5)>0.45, wing=tier>=6&&R(6)>0.4, crown=i>=95;
+  let s=`<svg viewBox="0 0 100 100" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">`;
+  if(wing) s+=`<ellipse cx="20" cy="54" rx="15" ry="22" fill="${acc}" opacity=".65" transform="rotate(-22 20 54)"/><ellipse cx="80" cy="54" rx="15" ry="22" fill="${acc}" opacity=".65" transform="rotate(22 80 54)"/>`;
+  if(hasTail) s+=`<path d="M78 72 q22 4 16 26 q-8 -8 -16 -8z" fill="${dark}"/>`;
+  if(earType===0) s+=`<circle cx="30" cy="28" r="10" fill="${body}" stroke="${dark}" stroke-width="2.5"/><circle cx="70" cy="28" r="10" fill="${body}" stroke="${dark}" stroke-width="2.5"/>`;
+  else if(earType===1) s+=`<path d="M28 32 L20 6 L42 26z" fill="${body}" stroke="${dark}" stroke-width="2"/><path d="M72 32 L80 6 L58 26z" fill="${body}" stroke="${dark}" stroke-width="2"/>`;
+  if(hasHorn) s+=`<path d="M40 20 L50 3 L60 20z" fill="${light}" stroke="${dark}" stroke-width="2"/>`;
+  s+=`<ellipse cx="50" cy="58" rx="34" ry="33" fill="${body}" stroke="${dark}" stroke-width="3"/>`;
+  if(hasSpike) s+=`<path d="M34 30 l6 -13 l6 13 l6 -13 l6 13 l6 -13 l6 13z" fill="${dark}"/>`;
+  s+=`<ellipse cx="50" cy="66" rx="20" ry="18" fill="${light}"/>`;
+  if(eyeType===0) s+=`<circle cx="40" cy="52" r="7.5" fill="#fff"/><circle cx="60" cy="52" r="7.5" fill="#fff"/><circle cx="41" cy="53" r="3.6" fill="#222"/><circle cx="61" cy="53" r="3.6" fill="#222"/>`;
+  else if(eyeType===1) s+=`<circle cx="40" cy="52" r="5" fill="#222"/><circle cx="60" cy="52" r="5" fill="#222"/>`;
+  else s+=`<path d="M34 53 q6 -7 12 0" stroke="#222" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M54 53 q6 -7 12 0" stroke="#222" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  s+=`<circle cx="33" cy="63" r="4" fill="${acc}" opacity=".45"/><circle cx="67" cy="63" r="4" fill="${acc}" opacity=".45"/>`;
+  s+=`<path d="M44 68 q6 6 12 0" stroke="${dark}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  s+=`<ellipse cx="38" cy="90" rx="8" ry="5" fill="${dark}"/><ellipse cx="62" cy="90" rx="8" ry="5" fill="${dark}"/>`;
+  if(crown) s+=`<path d="M35 15 l4 -11 l6 8 l5 -10 l5 10 l6 -8 l4 11z" fill="gold" stroke="#b8860b" stroke-width="1.5"/>`;
+  return s+`</svg>`;
+}
 function loadPoints(){const v=parseInt(localStorage.getItem("points"));return isNaN(v)?0:v;}
 function savePoints(p){localStorage.setItem("points",p);}
 // 하루 성장 한도: 하루 열심히 하면 1단계 정도 (과도한 파밍 방지)
@@ -528,7 +561,7 @@ function addDayEarned(n){const cur=loadDayEarned();localStorage.setItem("growthD
 function stageOf(pts){let s=0;for(let i=0;i<THRESH.length;i++){if(pts>=THRESH[i])s=i;}return s;} // 0-based
 function renderPet(){
   const pts=loadPoints(), s=stageOf(pts), st=STAGES[s];
-  $("#petSprite").textContent=st.emoji;
+  $("#petSprite").innerHTML=monSVG(s,58);
   $("#petNameText").textContent=st.name;
   $("#petLv").textContent="Lv."+(s+1);
   $("#petPts").textContent=pts+" P";
@@ -544,7 +577,7 @@ function renderDex(){
     const cls=i===cur?"cur":(i<cur?"reached":"locked");
     const need=i===0?"시작":THRESH[i]+"P";
     return `<div class="dex-cell ${cls}">${i===cur?'<div class="dex-here">현재</div>':''}`
-      +`<div class="dex-emoji">${s.emoji}</div><div class="dex-lv">Lv.${i+1}</div>`
+      +`<div class="dex-emoji">${monSVG(i,40)}</div><div class="dex-lv">Lv.${i+1}</div>`
       +`<div class="dex-name">${s.name}</div><div class="dex-pts">${need}</div></div>`;
   }).join("");
   $("#dexNow").textContent=`현재 Lv.${cur+1} / ${STAGES.length}  ·  ${pts}P  ·  ${STAGES[cur].name}`;
@@ -618,6 +651,10 @@ $("#dexBack").addEventListener("click",()=>{renderPet();show("home");});
 $("#goSetsHome").addEventListener("click",()=>{renderSets();show("sets");});
 $("#goSets").addEventListener("click",()=>{renderSets();show("sets");});
 $("#setsBack").addEventListener("click",()=>{renderPet();show("home");});
+$("#studyMinInput").addEventListener("change",e=>{
+  let v=parseInt(e.target.value); if(isNaN(v)||v<1)v=10; if(v>60)v=60;
+  localStorage.setItem("studyMin",v); e.target.value=v;
+});
 
 /* ================= CAMERA / OCR (여러 장 · 단어-뜻 쌍) ================= */
 $("#shootBtn").addEventListener("click",()=>$("#camInput").click());
@@ -798,6 +835,7 @@ function updateSetsCount(){const n=loadSets().length;const el=$("#setsCount");if
 
 /* ===== 단어장 목록(일자별) 화면 ===== */
 function renderSets(){
+  const mi=$("#studyMinInput"); if(mi) mi.value=getStudyMin();
   const sets=loadSets().slice().sort((a,b)=> a.date<b.date?1:-1);   // 최신 날짜 먼저
   const box=$("#setsList");
   if(!sets.length){ box.innerHTML='<p class="muted center" style="padding:20px 0">아직 저장된 단어장이 없어요.<br>📸 카메라로 단어를 찍어 추가해보세요!</p>'; updateSetsCount(); return; }
@@ -814,7 +852,7 @@ function renderSets(){
         <button class="set-play" data-date="${s.date}" data-m="en2ko">🔤 영→뜻</button>
         <button class="set-play" data-date="${s.date}" data-m="ko2en">💬 뜻→영</button>
       </div>
-      <button class="set-study" data-date="${s.date}">🕐 5분 포켓몬 학습 (7개씩 · 모두 클리어)</button>
+      <button class="set-study" data-date="${s.date}">🕐 포켓몬 암기 학습 (12개씩 · 타이머 후 모두 클리어)</button>
     </div>`).join("");
   box.querySelectorAll(".set-study").forEach(b=>b.addEventListener("click",()=>{
     const set=loadSets().find(s=>s.date===b.dataset.date);
@@ -1033,10 +1071,11 @@ $("#homeBtn").addEventListener("click",()=>{renderMy();renderPet();show("home");
 $("#battleBack").addEventListener("click",()=>{ if(confirm("배틀을 그만할까요?")){ renderPet(); show("home"); } });
 
 /* ================= 5분 포켓몬 학습 타이머 ================= */
-const STUDY_PW="4321", STUDY_SECONDS=300, CHUNK=7;
+const STUDY_PW="4321", CHUNK=12;
+function getStudyMin(){const v=parseInt(localStorage.getItem("studyMin"));return (isNaN(v)||v<1||v>60)?10:v;}
 let study=null;
 function fmtTime(s){const m=Math.floor(s/60),ss=s%60;return String(m).padStart(2,"0")+":"+String(ss).padStart(2,"0");}
-function currentNextPoke(){ const s=stageOf(loadPoints()); return {cur:STAGES[s], next:s<STAGES.length-1?STAGES[s+1]:null, lv:s+1}; }
+function currentNextPoke(){ const s=stageOf(loadPoints()); return {cur:STAGES[s], next:s<STAGES.length-1?STAGES[s+1]:null, lv:s+1, idx:s}; }
 function startStudy(setWords){
   if(!setWords||!setWords.length){alert("단어가 없어요.");return;}
   const words=shuffle(setWords);
@@ -1045,12 +1084,10 @@ function startStudy(setWords){
   timerPhase();
 }
 function timerPhase(){
-  const chunk=study.chunks[study.ci], pk=currentNextPoke();
+  const chunk=study.chunks[study.ci];
   $("#studyChunkInfo").textContent=`${study.ci+1}/${study.chunks.length}묶음 · ${chunk.length}단어`;
-  $("#studyEvo").innerHTML=`<div class="evo-cur">${pk.cur.emoji}<br><b>${pk.cur.name}</b><br>Lv.${pk.lv}</div>`
-    + (pk.next?`<div class="evo-arrow">➜</div><div class="evo-next">${pk.next.emoji}<br><b>${pk.next.name}</b><br>다음 진화</div>`:`<div class="evo-arrow">🏆<br>최고레벨</div>`);
   $("#studyWords").innerHTML=chunk.map(w=>`<div class="sw-row"><b>${w.en}</b><span>${w.ko}</span></div>`).join("");
-  study.remain=STUDY_SECONDS; $("#bigTimer").textContent=fmtTime(study.remain);
+  study.remain=getStudyMin()*60; $("#bigTimer").textContent=fmtTime(study.remain);
   show("studyTimer");
   clearInterval(study.tid);
   study.tid=setInterval(()=>{
