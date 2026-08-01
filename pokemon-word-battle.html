@@ -270,6 +270,15 @@
     color:#fff;border:2px solid #222;border-radius:12px;padding:10px 14px;font-weight:800;font-size:13px;cursor:pointer;
     box-shadow:0 3px 0 rgba(0,0,0,.3);}
   .kill-btn:active{transform:translateY(2px);box-shadow:none;}
+
+  /* ---------- 기기 연동 ---------- */
+  .sync-row{display:flex;gap:8px;}
+  .sync-row input{flex:1;padding:12px;border-radius:12px;border:3px solid #222;font-size:16px;font-weight:700;outline:none;min-width:0;}
+  .sync-row button{flex:none;padding:0 18px;border-radius:12px;border:3px solid var(--blue-dark);background:linear-gradient(var(--blue),var(--blue-dark));color:#fff;font-weight:800;cursor:pointer;}
+  .sync-actions{display:flex;gap:8px;margin-top:8px;}
+  .sync-actions button{flex:1;padding:11px;border-radius:12px;border:2px solid #222;background:#eef4ff;color:var(--ink);font-weight:800;cursor:pointer;font-size:13px;}
+  .sync-actions button:active{transform:translateY(2px);}
+  .sync-status{margin-top:8px;font-weight:800;font-size:13px;color:var(--blue-dark);min-height:18px;text-align:center;}
 </style>
 </head>
 <body>
@@ -311,6 +320,20 @@
       <button class="big-btn b-green" id="goCamera" style="width:100%">
         <span class="emoji">📷</span><span>카메라로 단어 촬영하기<small id="myCount">내 단어 0개</small></span>
       </button>
+    </div>
+
+    <div class="card">
+      <h2>☁️ 기기 연동 (여러 기기에서 같은 기록)</h2>
+      <p class="cam-desc">연동 코드를 정하고 각 기기에 <b>같은 코드</b>를 입력하면, 어느 기기에서든 포인트·단어장이 이어집니다.</p>
+      <div class="sync-row">
+        <input id="syncCodeInput" placeholder="예: hyeonjung7" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button id="syncSave">연결</button>
+      </div>
+      <div class="sync-actions">
+        <button id="syncUp">⬆️ 지금 올리기</button>
+        <button id="syncDown">⬇️ 지금 불러오기</button>
+      </div>
+      <div class="sync-status" id="syncStatus"></div>
     </div>
   </section>
 
@@ -479,7 +502,7 @@ function saveMy(){localStorage.setItem("myWords",JSON.stringify(myWords));update
 function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function dateLabel(ds){const p=(ds||"").split("-");return (+p[1])+"월 "+(+p[2])+"일";}
 function loadSets(){try{return JSON.parse(localStorage.getItem("wordSets")||"[]");}catch(e){return[];}}
-function saveSets(s){localStorage.setItem("wordSets",JSON.stringify(s));}
+function saveSets(s){localStorage.setItem("wordSets",JSON.stringify(s));cloudPushDebounced();}
 function addWordsToDate(date, pairs){
   const sets=loadSets();
   let set=sets.find(s=>s.date===date);
@@ -545,11 +568,11 @@ function monSVG(i, size){
   return s+`</svg>`;
 }
 function loadPoints(){const v=parseInt(localStorage.getItem("points"));return isNaN(v)?0:v;}
-function savePoints(p){localStorage.setItem("points",p);}
+function savePoints(p){localStorage.setItem("points",p);cloudPushDebounced();}
 // 하루 성장 한도: 하루 열심히 하면 1단계 정도 (과도한 파밍 방지)
 const DAILY_CAP=150;
 function loadDayEarned(){try{const o=JSON.parse(localStorage.getItem("growthDay")||"{}");return o.date===todayStr()?(o.earned||0):0;}catch(e){return 0;}}
-function addDayEarned(n){const cur=loadDayEarned();localStorage.setItem("growthDay",JSON.stringify({date:todayStr(),earned:cur+n}));}
+function addDayEarned(n){const cur=loadDayEarned();localStorage.setItem("growthDay",JSON.stringify({date:todayStr(),earned:cur+n}));cloudPushDebounced();}
 function stageOf(pts){let s=0;for(let i=0;i<THRESH.length;i++){if(pts>=THRESH[i])s=i;}return s;} // 0-based
 function renderPet(){
   const pts=loadPoints(), s=stageOf(pts), st=STAGES[s];
@@ -1156,6 +1179,76 @@ function exitStudy(){
 }
 $("#killTimer").addEventListener("click",exitStudy);
 $("#killQuiz").addEventListener("click",exitStudy);
+
+/* ================= 클라우드 동기화 (기기 연동) ================= */
+function getSyncCode(){ return (localStorage.getItem("syncCode")||"").trim(); }
+function gatherState(){ return {
+  points: loadPoints(),
+  wordSets: loadSets(),
+  growthDay: localStorage.getItem("growthDay")||"",
+  studyMin: localStorage.getItem("studyMin")||""
+}; }
+function setSyncStatus(t){ const el=$("#syncStatus"); if(el)el.textContent=t; }
+let _pushT=null;
+function cloudPushDebounced(){ if(!getSyncCode())return; clearTimeout(_pushT); _pushT=setTimeout(cloudPush,1500); }
+async function cloudPush(){
+  const code=getSyncCode(); if(!code)return;
+  try{
+    await fetch("/api/data",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,data:gatherState()})});
+    setSyncStatus("☁️ 클라우드에 저장됨");
+  }catch(e){ setSyncStatus("⚠️ 클라우드 저장 실패(연동 설정 확인)"); }
+}
+function mergeSets(a,b){
+  const map={};
+  (a||[]).concat(b||[]).forEach(s=>{
+    if(!s||!s.date)return;
+    if(!map[s.date]) map[s.date]={date:s.date,title:s.title||dateLabel(s.date),words:[],cleared:{},bonusGiven:false};
+    const m=map[s.date];
+    (s.words||[]).forEach(w=>{ if(w&&w.en&&!m.words.find(x=>x.en===w.en)) m.words.push(w); });
+    const c=s.cleared||{}; ["type","en2ko","ko2en"].forEach(k=>{ if(c[k])m.cleared[k]=true; });
+    if(s.bonusGiven) m.bonusGiven=true;
+  });
+  return Object.keys(map).sort().map(k=>map[k]);
+}
+function mergeGrowthDay(aStr,bStr){
+  const t=todayStr(); let ea=0,eb=0;
+  try{const a=JSON.parse(aStr||"{}"); if(a.date===t)ea=a.earned||0;}catch(e){}
+  try{const b=JSON.parse(bStr||"{}"); if(b.date===t)eb=b.earned||0;}catch(e){}
+  return JSON.stringify({date:t, earned:Math.max(ea,eb)});
+}
+async function cloudPull(silent){
+  const code=getSyncCode();
+  if(!code){ if(!silent)setSyncStatus("먼저 연동 코드를 입력하고 '연결'을 누르세요."); return; }
+  try{
+    const r=await fetch("/api/data?code="+encodeURIComponent(code));
+    const j=await r.json();
+    if(j.error) throw new Error(j.error);
+    const cloud=j.data;
+    // 병합: 포인트는 최댓값, 단어장은 합집합 → 어느 기기의 기록도 잃지 않음
+    const cloudPts=cloud&&cloud.points?parseInt(cloud.points)||0:0;
+    localStorage.setItem("points", Math.max(loadPoints(), cloudPts));
+    const cloudSets=cloud&&cloud.wordSets?cloud.wordSets:[];
+    localStorage.setItem("wordSets", JSON.stringify(mergeSets(loadSets(), cloudSets)));
+    localStorage.setItem("growthDay", mergeGrowthDay(localStorage.getItem("growthDay"), cloud?cloud.growthDay:null));
+    if(cloud&&cloud.studyMin) localStorage.setItem("studyMin", cloud.studyMin);
+    renderPet(); updateMyCounts(); updateSetsCount();
+    setSyncStatus("🔄 동기화 완료! (기록 병합됨)");
+    cloudPush();   // 병합 결과를 클라우드에도 반영
+  }catch(e){ if(!silent)setSyncStatus("⚠️ 동기화 실패 — 연동 저장소 설정을 확인하세요."); }
+}
+(function initSync(){
+  const inp=$("#syncCodeInput"); if(inp) inp.value=getSyncCode();
+  const sv=$("#syncSave"); if(sv) sv.addEventListener("click",()=>{
+    const c=($("#syncCodeInput").value||"").trim().replace(/[^a-zA-Z0-9_-]/g,"");
+    $("#syncCodeInput").value=c;
+    localStorage.setItem("syncCode",c);
+    if(c){ setSyncStatus("연결됨: "+c+" · 동기화 중..."); cloudPull(false); }
+    else setSyncStatus("연동을 해제했어요(이 기기에만 저장).");
+  });
+  const up=$("#syncUp"); if(up) up.addEventListener("click",()=>{ if(!getSyncCode()){setSyncStatus("먼저 코드를 연결하세요.");return;} cloudPush(); });
+  const dn=$("#syncDown"); if(dn) dn.addEventListener("click",()=>cloudPull(false));
+  if(getSyncCode()) cloudPull(true);   // 앱 시작 시 자동 병합
+})();
 
 /* ================= MUSIC CONTROL ================= */
 let bgmVol=parseFloat(localStorage.getItem("bgmVol")); if(isNaN(bgmVol))bgmVol=0.55;
