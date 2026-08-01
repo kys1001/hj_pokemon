@@ -143,6 +143,8 @@
 
   /* camera / OCR */
   .cam-desc{margin:0 0 10px;font-size:13px;color:#555;font-weight:600;line-height:1.5;}
+  .tip-box{margin:0 0 10px;font-size:12.5px;color:#7a5b00;font-weight:700;line-height:1.5;
+    background:#fffbe6;border:2px solid #ffe08a;border-radius:10px;padding:8px 10px;}
   .thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
   .thumb{position:relative;width:66px;height:66px;border-radius:10px;overflow:hidden;border:3px solid #222;}
   .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -234,6 +236,7 @@
     <h1 class="title" style="font-size:22px">📷 단어 촬영</h1>
     <div class="card">
       <p class="cam-desc">영어 단어와 뜻이 함께 있는 단어장을 찍어주세요. 단어-뜻 쌍을 자동으로 모두 찾아 아래 목록에 정리합니다. <b>여러 장</b>을 이어서 올릴 수 있어요.</p>
+      <p class="tip-box">💡 <b>인식 잘 되는 법</b> · 밝은 곳에서 · 글자가 화면에 크고 꽉 차게 · 정면에서 · 흔들림 없이. (사진은 자동으로 확대·선명화 보정됩니다)</p>
       <input type="file" accept="image/*" multiple id="camInput" class="hidden">
       <button class="big-btn b-blue" id="shootBtn" style="width:100%">
         <span class="emoji">📸</span><span>사진 찍기 / 여러 장 선택</span>
@@ -443,6 +446,41 @@ function parsePairs(text){
   return out;
 }
 
+/* --- 인식률 향상: 이미지 전처리(확대·흑백·대비·여백) + 지속 워커(LSTM·PSM6) --- */
+let ocrWorker=null, ocrIdx=0, ocrTotal=0;
+function loadImg(file){
+  return new Promise((res,rej)=>{const img=new Image();img.onload=()=>res(img);img.onerror=rej;img.src=URL.createObjectURL(file);});
+}
+function preprocess(img){
+  const maxSide=Math.max(img.width,img.height)||1;
+  let scale=maxSide<1800?1800/maxSide:1; scale=Math.min(scale,3);   // 작은 사진 확대(고DPI)
+  const pad=26, w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+  const cv=document.createElement("canvas"); cv.width=w+pad*2; cv.height=h+pad*2;
+  const ctx=cv.getContext("2d");
+  ctx.fillStyle="#fff"; ctx.fillRect(0,0,cv.width,cv.height);              // 흰 여백
+  ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality="high";
+  ctx.drawImage(img,pad,pad,w,h);
+  const im=ctx.getImageData(pad,pad,w,h), d=im.data;
+  let min=255,max=0; const lum=new Uint8ClampedArray(d.length/4);
+  for(let i=0,j=0;i<d.length;i+=4,j++){ const g=(d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114)|0; lum[j]=g; if(g<min)min=g; if(g>max)max=g; }
+  const range=Math.max(1,max-min);
+  for(let i=0,j=0;i<d.length;i+=4,j++){
+    let v=(lum[j]-min)*255/range;               // 대비 스트레칭(흑백)
+    v=v<128?v*0.8:128+(v-128)*1.2;              // 중간 대비 강화
+    v=v<0?0:(v>255?255:v); d[i]=d[i+1]=d[i+2]=v;
+  }
+  ctx.putImageData(im,pad,pad);
+  return cv;
+}
+async function getOcrWorker(){
+  if(ocrWorker) return ocrWorker;
+  ocrWorker=await Tesseract.createWorker("eng+kor",1,{logger:m=>{
+    if(m.status==="recognizing text") $("#ocrStatus").textContent=`🔍 ${ocrIdx}/${ocrTotal} 인식 중 ${Math.round(m.progress*100)}%`;
+  }});
+  await ocrWorker.setParameters({ tessedit_pageseg_mode:"6", preserve_interword_spaces:"1" });
+  return ocrWorker;
+}
+
 $("#camInput").addEventListener("change", async e=>{
   const files=[...e.target.files]; e.target.value="";
   if(!files.length)return;
@@ -456,21 +494,26 @@ $("#camInput").addEventListener("change", async e=>{
     return;
   }
 
-  let n=0, before=$$("#pairList .pair-row").length;
-  for(const f of files){
-    n++;
-    st.textContent=`🔍 ${n}/${files.length}번째 사진 인식 중...`;
+  st.textContent="⏳ 글자 인식 엔진 준비 중... (처음 한 번만 시간이 걸려요)";
+  let worker;
+  try{ worker=await getOcrWorker(); }
+  catch(err){ st.textContent="엔진을 불러오지 못했어요(인터넷 확인). 아래에 직접 입력해주세요."; addPairRow("","",true); return; }
+
+  const before=$$("#pairList .pair-row").length;
+  ocrTotal=files.length;
+  for(let i=0;i<files.length;i++){
+    ocrIdx=i+1;
     try{
-      const url=URL.createObjectURL(f);
-      const res=await Tesseract.recognize(url,"eng+kor",{logger:m=>{
-        if(m.status==="recognizing text") st.textContent=`🔍 ${n}/${files.length}번째 인식 중 ${Math.round(m.progress*100)}%`;
-      }});
+      const img=await loadImg(files[i]);
+      st.textContent=`🖼️ ${ocrIdx}/${ocrTotal} 이미지 보정 중...`;
+      const canvas=preprocess(img);
+      const res=await worker.recognize(canvas);
       parsePairs(res.data.text).forEach(p=>addPairRow(p.en,p.ko));
     }catch(err){}
   }
   const found=$$("#pairList .pair-row").length - before;
-  if(found>0){ st.textContent=`✅ 단어 ${found}개를 찾았어요! 확인·수정 후 추가하세요.`; }
-  else{ st.textContent="글자를 잘 못 찾았어요. 아래에 직접 입력해보세요."; addPairRow("","",true); }
+  if(found>0) st.textContent=`✅ 단어 ${found}개를 찾았어요! 확인·수정 후 추가하세요.`;
+  else{ st.textContent="글자를 잘 못 찾았어요. 더 밝고 또렷하게 다시 찍거나 직접 입력해보세요."; addPairRow("","",true); }
 });
 
 $("#addRowBtn").addEventListener("click",()=>addPairRow("","",true));
