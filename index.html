@@ -186,6 +186,24 @@
   .bar .stat{flex:1;border-radius:12px;padding:8px;text-align:center;}
   .bar .stat b{display:block;font-size:20px;}
   .bar .stat span{font-size:11px;opacity:.85;}
+
+  /* ---------- Pet / 성장 ---------- */
+  .pet-card{display:flex;align-items:center;gap:14px;
+    background:linear-gradient(135deg,#fff 60%,#fff7d6);}
+  .pet-sprite{font-size:56px;line-height:1;flex:none;animation:bob 1.6s ease-in-out infinite;
+    filter:drop-shadow(2px 4px 2px rgba(0,0,0,.2));}
+  .pet-sprite.evolve{animation:evolvePop .9s;}
+  @keyframes evolvePop{0%{transform:scale(1)}30%{transform:scale(1.5) rotate(-8deg);filter:brightness(2)}
+    60%{transform:scale(1.5) rotate(8deg);filter:brightness(2)}100%{transform:scale(1)}}
+  .pet-info{flex:1;min-width:0;}
+  .pet-name{font-weight:900;font-size:16px;color:var(--ink);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .pet-lv{background:var(--yellow);color:#3a2f00;font-size:12px;padding:2px 8px;border-radius:10px;border:2px solid var(--yellow-dark);}
+  .pet-bar{height:15px;background:#eceff4;border:2px solid #222;border-radius:10px;overflow:hidden;margin:8px 0 4px;}
+  .pet-bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffcf3f,#ff9d2f);transition:width .6s;}
+  .pet-pts{display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:#777;}
+  .pts-earned{font-weight:900;color:var(--blue);font-size:17px;margin-top:10px;}
+  .evolve-msg{margin-top:6px;font-weight:900;color:#e8710a;font-size:16px;}
+  .evolve-msg.show{animation:pop2 .5s;}
 </style>
 </head>
 <body>
@@ -202,6 +220,15 @@
     <div class="ball"><i class="btn"></i></div>
     <h1 class="title">포켓 단어 배틀</h1>
     <p class="subtitle">⚡ 사진 찍고 · 맞히고 · 잡아라! ⚡</p>
+
+    <div class="card pet-card">
+      <div class="pet-sprite" id="petSprite">🥚</div>
+      <div class="pet-info">
+        <div class="pet-name"><span id="petNameText">미스터리 에그</span> <span class="pet-lv" id="petLv">Lv.1</span></div>
+        <div class="pet-bar"><i id="petBar"></i></div>
+        <div class="pet-pts"><span id="petPts">0 P</span> <span id="petNext">다음까지 40P</span></div>
+      </div>
+    </div>
 
     <div class="card">
       <h2>① 난이도 선택</h2>
@@ -307,6 +334,8 @@
         <div class="stat" style="background:#fee;color:#234"><b id="rWrong">0</b><span>틀림</span></div>
         <div class="stat" style="background:#efe;color:#234"><b id="rCatch">0</b><span>잡은 포켓몬</span></div>
       </div>
+      <div class="pts-earned" id="ptsEarned"></div>
+      <div class="evolve-msg" id="evolveMsg"></div>
       <div class="caught-tray" id="caughtTray"></div>
     </div>
     <div class="btn-grid" style="margin:0 2px">
@@ -358,6 +387,36 @@ function show(id){$$(".screen").forEach(s=>s.classList.remove("active"));$("#"+i
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function loadMy(){try{return JSON.parse(localStorage.getItem("myWords")||"[]");}catch(e){return[];}}
 function saveMy(){localStorage.setItem("myWords",JSON.stringify(myWords));updateMyCounts();}
+
+/* ================= 포인트 & 포켓몬 성장 (10단계) ================= */
+const STAGES=[
+  {emoji:"🥚",name:"미스터리 에그"},
+  {emoji:"🐛",name:"꼬물이"},
+  {emoji:"🐤",name:"삐약이"},
+  {emoji:"🦎",name:"도마리"},
+  {emoji:"🦊",name:"불꼬리"},
+  {emoji:"🐺",name:"실버울프"},
+  {emoji:"🐯",name:"타이가"},
+  {emoji:"🦁",name:"레오킹"},
+  {emoji:"🐲",name:"베이비드래곤"},
+  {emoji:"🐉",name:"레전드래곤"}
+];
+const THRESH=[0,40,100,180,300,460,680,960,1320,1800]; // 각 단계 누적 포인트
+function loadPoints(){const v=parseInt(localStorage.getItem("points"));return isNaN(v)?0:v;}
+function savePoints(p){localStorage.setItem("points",p);}
+function stageOf(pts){let s=0;for(let i=0;i<THRESH.length;i++){if(pts>=THRESH[i])s=i;}return s;} // 0-based
+function renderPet(){
+  const pts=loadPoints(), s=stageOf(pts), st=STAGES[s];
+  $("#petSprite").textContent=st.emoji;
+  $("#petNameText").textContent=st.name;
+  $("#petLv").textContent="Lv."+(s+1);
+  $("#petPts").textContent=pts+" P";
+  let pct, nextTxt;
+  if(s>=STAGES.length-1){ pct=100; nextTxt="🎉 최고 레벨 달성!"; }
+  else{ const cur=THRESH[s], next=THRESH[s+1]; pct=Math.round((pts-cur)/(next-cur)*100); nextTxt="다음까지 "+(next-pts)+"P"; }
+  $("#petBar").style.width=pct+"%";
+  $("#petNext").textContent=nextTxt;
+}
 
 /* ================= BGM (원곡 8비트 배경음악, 파일 없음) ================= */
 const BGM=(function(){
@@ -423,7 +482,7 @@ $("#goCamera").addEventListener("click",()=>{renderMy();show("camera");});
 
 /* ================= CAMERA / OCR (여러 장 · 단어-뜻 쌍) ================= */
 $("#shootBtn").addEventListener("click",()=>$("#camInput").click());
-$("#camBack").addEventListener("click",()=>show("home"));
+$("#camBack").addEventListener("click",()=>{renderPet();show("home");});
 
 function addThumb(file){
   const url=URL.createObjectURL(file);
@@ -580,6 +639,7 @@ function renderMy(){
 }
 function updateMyCounts(){$("#myCount").textContent="내 단어 "+myWords.length+"개";}
 updateMyCounts();
+renderPet();
 
 /* ================= BATTLE ENGINE ================= */
 let lastPool=BANK[1];
@@ -708,6 +768,21 @@ function endBattle(){
   $("#rCorrect").textContent=state.correct;
   $("#rWrong").textContent=state.wrong;
   $("#rCatch").textContent=state.caught.length;
+
+  // 포인트 적립 (정답당 난이도 보너스) + 성장/진화 판정
+  const earned=state.correct*(5+state.diff*5);   // 초급 10 / 중급 15 / 고급 20 점
+  const before=loadPoints(), beforeStage=stageOf(before);
+  const after=before+earned, afterStage=stageOf(after);
+  savePoints(after);
+  $("#ptsEarned").textContent = earned>0 ? `+${earned} P 획득!  (총 ${after} P)` : `이번엔 포인트 없음… 다시 도전!`;
+  const ev=$("#evolveMsg");
+  if(afterStage>beforeStage){
+    ev.textContent=`✨ ${STAGES[beforeStage].name} → ${STAGES[afterStage].name} (으)로 진화!`;
+    ev.classList.add("show");
+    setTimeout(sndCatch,300); setTimeout(sndCatch,700);
+  }else{ ev.textContent=""; ev.classList.remove("show"); }
+  renderPet();
+
   const total=state.correct+state.wrong;
   const rate=total?state.correct/total:0;
   let mon,title;
@@ -723,8 +798,8 @@ function endBattle(){
   show("result");
 }
 $("#retryBtn").addEventListener("click",()=>startBattle(lastPool));
-$("#homeBtn").addEventListener("click",()=>{renderMy();show("home");});
-$("#battleBack").addEventListener("click",()=>{ if(confirm("배틀을 그만할까요?")) show("home"); });
+$("#homeBtn").addEventListener("click",()=>{renderMy();renderPet();show("home");});
+$("#battleBack").addEventListener("click",()=>{ if(confirm("배틀을 그만할까요?")){ renderPet(); show("home"); } });
 
 /* ================= MUSIC CONTROL ================= */
 let bgmVol=parseFloat(localStorage.getItem("bgmVol")); if(isNaN(bgmVol))bgmVol=0.55;
