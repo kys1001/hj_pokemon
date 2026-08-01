@@ -238,7 +238,11 @@
   .set-date{font-size:11px;color:#9aa3b2;font-weight:700;margin-left:4px;}
   .set-del{background:#ffe3e3;border:2px solid #d63020;border-radius:10px;font-size:15px;cursor:pointer;
     width:36px;height:34px;}
-  .set-count{font-size:13px;font-weight:800;color:#666;margin:6px 0 10px;}
+  .set-count{font-size:13px;font-weight:800;color:#666;margin:6px 0 6px;}
+  .set-badges{font-size:11px;font-weight:800;color:#aab;margin:0 0 10px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+  .set-badges span{background:#eef0f4;border:1.5px solid #ccd;border-radius:8px;padding:2px 6px;color:#99a;}
+  .set-badges span.bg-on{background:#e9fbe8;border-color:#4caf50;color:#2f7d32;}
+  .set-badges .bg-done{color:#e8710a;}
   .set-actions{display:flex;gap:8px;}
   .set-actions button{flex:1;border:2px solid #222;border-radius:11px;padding:11px 4px;font-weight:800;
     font-size:13px;cursor:pointer;background:#eef4ff;color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.12);}
@@ -291,7 +295,7 @@
         <div class="pet-name"><span id="petNameText">미스터리 에그</span> <span class="pet-lv" id="petLv">Lv.1</span></div>
         <div class="pet-bar"><i id="petBar"></i></div>
         <div class="pet-pts"><span id="petPts">0 P</span> <span id="petNext">다음까지 40P</span></div>
-        <div class="pet-dex-hint">📖 도감 보기 (50단계) ›</div>
+        <div class="pet-dex-hint">📖 도감 보기 (100단계) ›</div>
       </div>
     </div>
 
@@ -301,20 +305,6 @@
       <button class="big-btn b-blue" id="goSetsHome" style="width:100%">
         <span class="emoji">📚</span><span>단어장 불러오기 · 퀴즈<small id="setsCount">0개 단어장 저장됨</small></span>
       </button>
-    </div>
-
-    <div class="card">
-      <h2>🎮 기본 단어로 연습 <span style="font-size:12px;color:#999;font-weight:700">(내장 샘플)</span></h2>
-      <div class="diff-row" style="margin-bottom:12px">
-        <div class="diff-chip d1 on" data-diff="1">쉬움<span class="star">⭐ 초급</span></div>
-        <div class="diff-chip d2" data-diff="2">보통<span class="star">⭐⭐ 중급</span></div>
-        <div class="diff-chip d3" data-diff="3">어려움<span class="star">⭐⭐⭐ 고급</span></div>
-      </div>
-      <div class="btn-grid">
-        <button class="big-btn b-red" data-mode="type"><span class="emoji">⌨️</span><span>단어 → 스펠링 입력<small>뜻 보고 영단어 직접 타이핑</small></span></button>
-        <button class="big-btn b-blue" data-mode="en2ko"><span class="emoji">🔤</span><span>영어 → 뜻 맞히기<small>4지선다</small></span></button>
-        <button class="big-btn b-yellow" data-mode="ko2en"><span class="emoji">💬</span><span>뜻 → 영단어 맞히기<small>4지선다</small></span></button>
-      </div>
     </div>
 
     <div class="card">
@@ -348,10 +338,9 @@
     </div>
 
     <div class="card">
-      <h2>📒 오늘 단어장 (<span id="myList2">0</span>)</h2>
-      <div id="myChips" class="center muted">오늘 추가한 단어가 없어요. 📸 찍어서 추가해보세요!</div>
-      <button class="big-btn b-blue" id="goSets" style="width:100%;margin-top:14px">
-        <span class="emoji">📚</span><span>저장된 단어장(일자별) 보기 · 퀴즈</span>
+      <p class="cam-desc" style="margin:0 0 12px">촬영해 추가한 단어는 <b>선택한 날짜의 단어장(폴더)</b>에 저장돼요. 아래에서 단어장을 골라 연습하세요!</p>
+      <button class="big-btn b-blue" id="goSets" style="width:100%">
+        <span class="emoji">📚</span><span>저장된 단어장(일자별) 보기 · 연습</span>
       </button>
     </div>
     <span class="link" id="camBack">← 홈으로</span>
@@ -439,7 +428,7 @@
   <!-- ============ POKEDEX (도감) ============ -->
   <section id="dex" class="screen">
     <h1 class="title" style="font-size:22px">📖 포켓몬 도감</h1>
-    <p class="dex-now" id="dexNow">현재 Lv.1 / 50</p>
+    <p class="dex-now" id="dexNow">현재 Lv.1 / 100</p>
     <div class="dex-grid" id="dexGrid"></div>
     <span class="link" id="dexBack">← 홈으로</span>
   </section>
@@ -493,14 +482,14 @@ function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMo
 function dateLabel(ds){const p=(ds||"").split("-");return (+p[1])+"월 "+(+p[2])+"일";}
 function loadSets(){try{return JSON.parse(localStorage.getItem("wordSets")||"[]");}catch(e){return[];}}
 function saveSets(s){localStorage.setItem("wordSets",JSON.stringify(s));}
-function addWordsToToday(pairs){
-  const sets=loadSets(), ds=todayStr();
-  let set=sets.find(s=>s.date===ds);
-  if(!set){ set={date:ds,title:dateLabel(ds),words:[]}; sets.push(set); }
+function addWordsToDate(date, pairs){
+  const sets=loadSets();
+  let set=sets.find(s=>s.date===date);
+  if(!set){ set={date, title:dateLabel(date), words:[], cleared:{}}; sets.push(set); }
   let added=0;
   pairs.forEach(({en,ko})=>{ if(!en||!ko)return; set.words=set.words.filter(w=>w.en!==en); set.words.push({en,ko}); added++; });
   saveSets(sets);
-  return {added, total:set.words.length, date:ds};
+  return {added, total:set.words.length, date};
 }
 // 이전 flat 단어장(myWords)을 일자별 세트로 1회 이관
 (function migrateSets(){ const sets=loadSets(); if(sets.length===0 && myWords.length){ saveSets([{date:todayStr(),title:dateLabel(todayStr()),words:myWords.slice()}]); } })();
@@ -516,7 +505,17 @@ const STAGES=[
   {emoji:"🐋",name:"고래왕"},{emoji:"🦭",name:"물범이"},{emoji:"🦦",name:"수달몬"},{emoji:"🦫",name:"비버킹"},{emoji:"🦡",name:"오소리몬"},
   {emoji:"🦝",name:"너구리몬"},{emoji:"🦨",name:"스컹크로"},{emoji:"🦔",name:"가시돌이"},{emoji:"🐇",name:"토끼점프"},{emoji:"🐺",name:"실버울프"},
   {emoji:"🦊",name:"불꼬리"},{emoji:"🐆",name:"치타슬래시"},{emoji:"🐅",name:"타이가"},{emoji:"🦁",name:"레오킹"},{emoji:"🐘",name:"코끼왕"},
-  {emoji:"🦏",name:"코뿔로드"},{emoji:"🦛",name:"하마킹"},{emoji:"🦄",name:"유니콘"},{emoji:"🐲",name:"베이비드래곤"},{emoji:"🐉",name:"레전드래곤"}
+  {emoji:"🦏",name:"코뿔로드"},{emoji:"🦛",name:"하마킹"},{emoji:"🦄",name:"유니콘"},{emoji:"🐲",name:"베이비드래곤"},{emoji:"🐉",name:"레전드래곤"},
+  {emoji:"🦇",name:"박쥐킹"},{emoji:"🦅",name:"이글로드"},{emoji:"🦉",name:"나이트아울"},{emoji:"🦚",name:"공작왕"},{emoji:"🦜",name:"앵무비트"},
+  {emoji:"🦢",name:"백조기사"},{emoji:"🦩",name:"플라밍고"},{emoji:"🕊️",name:"피스버드"},{emoji:"🦃",name:"칠면몬"},{emoji:"🦤",name:"도도"},
+  {emoji:"🐖",name:"멧돼왕"},{emoji:"🐗",name:"인빠사"},{emoji:"🐏",name:"뿔양이"},{emoji:"🐐",name:"산양신"},{emoji:"🦌",name:"사슴요정"},
+  {emoji:"🦬",name:"버팔로드"},{emoji:"🐕",name:"늑대견"},{emoji:"🐈",name:"캣마도사"},{emoji:"🐎",name:"페가서스"},{emoji:"🦓",name:"얼룩번개"},
+  {emoji:"🐿️",name:"다람도치"},{emoji:"🦥",name:"슬로스몬"},{emoji:"🦧",name:"오랑탄"},{emoji:"🐒",name:"몽키킹"},{emoji:"🦣",name:"매머드"},
+  {emoji:"🐪",name:"사막단봉"},{emoji:"🐫",name:"쌍봉왕"},{emoji:"🦒",name:"롱넥로드"},{emoji:"🦘",name:"캥거펀치"},{emoji:"🐧",name:"펭나이트"},
+  {emoji:"🍄",name:"버섯요정"},{emoji:"🌵",name:"캑터스몬"},{emoji:"🌲",name:"엔트리"},{emoji:"🪨",name:"바위골렘"},{emoji:"🌊",name:"해일몬"},
+  {emoji:"💧",name:"아쿠아정령"},{emoji:"❄️",name:"프로스트"},{emoji:"🔥",name:"파이어드레이크"},{emoji:"🌋",name:"볼케이노"},{emoji:"⚡",name:"볼트정령"},
+  {emoji:"🌪️",name:"토네이드"},{emoji:"☄️",name:"메테오"},{emoji:"🌙",name:"루나울프"},{emoji:"☀️",name:"솔라리온"},{emoji:"🌈",name:"레인보우"},
+  {emoji:"💎",name:"크리스탈"},{emoji:"🔮",name:"미스틱오브"},{emoji:"👑",name:"킹크라운"},{emoji:"🌠",name:"슈팅스타"},{emoji:"🏆",name:"그랜드챔피언"}
 ];
 // 누적 임계값: 1문제 정답 = 1P. 레벨업에 필요한 문제 수가 100→150→200…씩 증가
 const THRESH=(function(){const a=[0];for(let i=1;i<STAGES.length;i++){a[i]=a[i-1]+(100+(i-1)*50);}return a;})();
@@ -783,28 +782,17 @@ $("#addAllBtn").addEventListener("click",()=>{
     if(en&&ko) pairs.push({en,ko}); else if(en||ko) skipped++;
   });
   if(!pairs.length){alert("추가할 단어가 없어요. 영단어와 뜻을 모두 채워주세요.");return;}
-  const res=addWordsToToday(pairs);   // 오늘 날짜 단어장에 저장
+  // 어느 날짜 단어장(폴더)에 저장할지 물어봄 (기본=오늘)
+  let date=prompt("어느 날짜 단어장에 저장할까요?\n(YYYY-MM-DD, 그대로 두면 오늘)", todayStr());
+  if(date===null) return;                       // 취소
+  date=(date||"").trim(); if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) date=todayStr();
+  const res=addWordsToDate(date, pairs);
   $("#pairList").innerHTML=""; $("#reviewArea").classList.add("hidden"); $("#thumbs").innerHTML="";
-  $("#ocrStatus").textContent=`🎉 오늘(${dateLabel(res.date)}) 단어장에 ${res.added}개 추가! (총 ${res.total}개)`+(skipped?` · 미완성 ${skipped}줄 제외`:"");
-  sndCatch(); renderMy(); updateMyCounts(); updateSetsCount();
+  $("#ocrStatus").textContent=`🎉 [${dateLabel(res.date)}] 단어장에 ${res.added}개 저장! (총 ${res.total}개)`+(skipped?` · 미완성 ${skipped}줄 제외`:"");
+  sndCatch(); updateMyCounts(); updateSetsCount();
 });
 
-function renderMy(){
-  const sets=loadSets(), today=sets.find(s=>s.date===todayStr()), words=today?today.words:[];
-  $("#myList2").textContent=words.length;
-  const box=$("#myChips");
-  if(words.length===0){box.innerHTML="오늘 추가한 단어가 없어요. 📸 찍어서 추가해보세요!";box.className="center muted";}
-  else{
-    box.className="";
-    box.innerHTML=words.map((w,i)=>
-      `<span class="word-chip"><b>${w.en}</b> ${w.ko} <span class="x" data-i="${i}">✕</span></span>`).join("");
-    box.querySelectorAll(".x").forEach(x=>x.addEventListener("click",()=>{
-      const s=loadSets(), t=s.find(z=>z.date===todayStr());
-      if(t){ t.words.splice(+x.dataset.i,1); saveSets(s.filter(z=>z.words.length>0)); }
-      renderMy(); updateMyCounts(); updateSetsCount();
-    }));
-  }
-}
+function renderMy(){ updateMyCounts(); updateSetsCount(); }
 function updateMyCounts(){const total=loadSets().reduce((a,s)=>a+s.words.length,0);$("#myCount").textContent="저장된 단어 "+total+"개";}
 function updateSetsCount(){const n=loadSets().length;const el=$("#setsCount");if(el)el.textContent=n+"개 단어장 저장됨";}
 
@@ -820,6 +808,7 @@ function renderSets(){
         <button class="set-del" data-date="${s.date}" title="삭제">🗑️</button>
       </div>
       <div class="set-count">단어 ${s.words.length}개</div>
+      <div class="set-badges">3종 통과: <span class="${(s.cleared||{}).type?'bg-on':''}">⌨️입력</span> <span class="${(s.cleared||{}).en2ko?'bg-on':''}">🔤영→뜻</span> <span class="${(s.cleared||{}).ko2en?'bg-on':''}">💬뜻→영</span>${s.bonusGiven?' <b class="bg-done">🏅완주!</b>':''}</div>
       <div class="set-actions">
         <button class="set-play" data-date="${s.date}" data-m="type">⌨️ 입력</button>
         <button class="set-play" data-date="${s.date}" data-m="en2ko">🔤 영→뜻</button>
@@ -836,7 +825,7 @@ function renderSets(){
     const set=loadSets().find(s=>s.date===b.dataset.date);
     if(!set||!set.words.length){ alert("단어가 없어요."); return; }
     if(b.dataset.m!=="type" && set.words.length<2){ alert("객관식은 단어가 2개 이상 필요해요. '입력' 모드로 해보세요."); return; }
-    state.mode=b.dataset.m; startBattle(set.words,{onlySet:true});   // 이 세트 단어로만 출제
+    state.mode=b.dataset.m; startBattle(set.words,{onlySet:true, folder:{date:b.dataset.date, mode:b.dataset.m}});   // 이 세트 단어로만 출제
   }));
   box.querySelectorAll(".set-del").forEach(b=>b.addEventListener("click",()=>{
     if(!confirm("이 단어장을 삭제할까요?\n(모은 포인트·레벨은 그대로 유지됩니다)")) return;
@@ -855,6 +844,7 @@ function startBattle(pool, opts){
   lastPool=pool; lastOpts=opts;
   if(!pool||pool.length<1){alert("단어가 없어요.");return;}
   state.onlySet=!!opts.onlySet;              // 세트 전용: 오답 보기도 이 세트 단어만 사용
+  state.folder=opts.folder||null;            // 폴더 연습 컨텍스트 {date, mode}
   let full = pool.slice();
   if(!state.onlySet && (state.mode==="en2ko"||state.mode==="ko2en") && full.length<4){
     full = full.concat(BANK[1]).slice(0,Math.max(4,full.length));
@@ -980,6 +970,21 @@ function resolveAnswer(right,q){
   setTimeout(()=>{toast.className="toast";state.idx++;nextQuestion();}, right?1250:1500);
 }
 
+/* ===== 폴더 3종 통과(모두 정답) 판정 + 완주 보너스 ===== */
+const MODE_NAME={type:"스펠링 입력",en2ko:"영어→뜻",ko2en:"뜻→영단어"};
+function markFolderCleared(date, mode){
+  const sets=loadSets(), set=sets.find(s=>s.date===date); if(!set) return 0;
+  set.cleared=set.cleared||{}; set.cleared[mode]=true;
+  let bonus=0;
+  if(!set.bonusGiven && set.cleared.type && set.cleared.en2ko && set.cleared.ko2en){
+    set.bonusGiven=true;
+    bonus=Math.min(30, Math.max(0, DAILY_CAP-loadDayEarned()));  // 완주 보너스(하루 한도 내)
+    if(bonus>0) addDayEarned(bonus);
+  }
+  saveSets(sets);
+  return bonus;
+}
+
 /* ================= RESULT ================= */
 function endBattle(){
   $("#rCorrect").textContent=state.correct;
@@ -990,11 +995,16 @@ function endBattle(){
   const room=Math.max(0, DAILY_CAP-loadDayEarned());
   const earned=Math.min(state.correct, room);
   if(earned>0) addDayEarned(earned);
+  // 폴더 연습에서 전부 맞히면 그 모드 '통과' 기록 → 3종 통과 시 완주 보너스
+  const passed = state.folder && state.correct>0 && state.wrong===0;
+  const folderBonus = passed ? markFolderCleared(state.folder.date, state.folder.mode) : 0;
   const before=loadPoints(), beforeStage=stageOf(before);
-  const after=before+earned, afterStage=stageOf(after);
+  const after=before+earned+folderBonus, afterStage=stageOf(after);
   savePoints(after);
   const capped = state.correct>earned;
   $("#ptsEarned").innerHTML = `🏅 이번 점수 <b>${state.score}</b>점 · 맞힘 ${state.correct}문제<br>🌱 성장 +${earned}P (누적 ${after}P)`
+    + (passed?`<br><span style="color:#2a75bb;font-weight:900">✅ ${MODE_NAME[state.folder.mode]} 통과!</span>`:"")
+    + (folderBonus>0?`<br><span style="color:#e8710a;font-weight:900">🏅 3종 모두 통과! 완주 보너스 +${folderBonus}P</span>`:"")
     + (capped?`<br><span style="color:#c33;font-size:13px">오늘 성장 한도(${DAILY_CAP}P) 도달 — 내일 또 해요!</span>`:"");
   const ev=$("#evolveMsg");
   if(afterStage>beforeStage){
