@@ -93,7 +93,7 @@
 
   /* ---------- Battle ---------- */
   .battle-top{display:flex;justify-content:space-between;align-items:center;
-    padding:12px 16px;color:#fff;font-weight:800;}
+    padding:52px 16px 10px;color:#fff;font-weight:800;}
   .battle-top .lvl{background:rgba(0,0,0,.3);padding:4px 12px;border-radius:20px;font-size:13px;}
   .arena{margin:6px 14px 0;background:linear-gradient(#bfe8ff,#8fd3f4);
     border-radius:20px;border:3px solid #222;padding:20px 16px 16px;position:relative;overflow:hidden;
@@ -229,6 +229,20 @@
     box-shadow:0 0 0 3px rgba(238,21,21,.3),0 3px 0 rgba(0,0,0,.15);}
   .dex-here{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;
     font-size:10px;font-weight:900;padding:2px 8px;border-radius:8px;border:2px solid #fff;white-space:nowrap;}
+
+  /* ---------- 단어장 목록 (일자별) ---------- */
+  .set-card{background:#fff;border:3px solid #222;border-radius:16px;padding:14px;margin:0 0 12px;
+    box-shadow:0 5px 0 rgba(0,0,0,.15);}
+  .set-head{display:flex;justify-content:space-between;align-items:center;}
+  .set-title b{font-size:17px;color:var(--ink);}
+  .set-date{font-size:11px;color:#9aa3b2;font-weight:700;margin-left:4px;}
+  .set-del{background:#ffe3e3;border:2px solid #d63020;border-radius:10px;font-size:15px;cursor:pointer;
+    width:36px;height:34px;}
+  .set-count{font-size:13px;font-weight:800;color:#666;margin:6px 0 10px;}
+  .set-actions{display:flex;gap:8px;}
+  .set-actions button{flex:1;border:2px solid #222;border-radius:11px;padding:11px 4px;font-weight:800;
+    font-size:13px;cursor:pointer;background:#eef4ff;color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.12);}
+  .set-actions button:active{transform:translateY(2px);box-shadow:none;}
 </style>
 </head>
 <body>
@@ -257,29 +271,24 @@
     </div>
 
     <div class="card">
-      <h2>① 난이도 선택</h2>
-      <div class="diff-row">
+      <h2>📚 내 단어장 (일자별)</h2>
+      <p class="cam-desc">촬영해 저장한 단어장을 날짜별로 불러와 퀴즈! <b>퀴즈는 그날 올린 단어로만</b> 출제돼요.</p>
+      <button class="big-btn b-blue" id="goSetsHome" style="width:100%">
+        <span class="emoji">📚</span><span>단어장 불러오기 · 퀴즈<small id="setsCount">0개 단어장 저장됨</small></span>
+      </button>
+    </div>
+
+    <div class="card">
+      <h2>🎮 기본 단어로 연습 <span style="font-size:12px;color:#999;font-weight:700">(내장 샘플)</span></h2>
+      <div class="diff-row" style="margin-bottom:12px">
         <div class="diff-chip d1 on" data-diff="1">쉬움<span class="star">⭐ 초급</span></div>
         <div class="diff-chip d2" data-diff="2">보통<span class="star">⭐⭐ 중급</span></div>
         <div class="diff-chip d3" data-diff="3">어려움<span class="star">⭐⭐⭐ 고급</span></div>
       </div>
-    </div>
-
-    <div class="card">
-      <h2>② 게임 모드 선택</h2>
       <div class="btn-grid">
-        <button class="big-btn b-red" data-mode="type">
-          <span class="emoji">⌨️</span>
-          <span>단어 → 스펠링 입력<small>단어(뜻)를 보고 영단어를 직접 타이핑</small></span>
-        </button>
-        <button class="big-btn b-blue" data-mode="en2ko">
-          <span class="emoji">🔤</span>
-          <span>영어 → 뜻 맞히기<small>영단어를 보고 알맞은 뜻을 4개 중 선택</small></span>
-        </button>
-        <button class="big-btn b-yellow" data-mode="ko2en">
-          <span class="emoji">💬</span>
-          <span>뜻 → 영단어 맞히기<small>한글 뜻을 보고 알맞은 영단어를 선택</small></span>
-        </button>
+        <button class="big-btn b-red" data-mode="type"><span class="emoji">⌨️</span><span>단어 → 스펠링 입력<small>뜻 보고 영단어 직접 타이핑</small></span></button>
+        <button class="big-btn b-blue" data-mode="en2ko"><span class="emoji">🔤</span><span>영어 → 뜻 맞히기<small>4지선다</small></span></button>
+        <button class="big-btn b-yellow" data-mode="ko2en"><span class="emoji">💬</span><span>뜻 → 영단어 맞히기<small>4지선다</small></span></button>
       </div>
     </div>
 
@@ -314,9 +323,11 @@
     </div>
 
     <div class="card">
-      <h2>📒 내 단어장 (<span id="myList2">0</span>)</h2>
-      <div id="myChips" class="center muted">아직 없어요. 첫 단어를 찍어보세요!</div>
-      <div class="btn-grid" style="margin-top:14px" id="myPlayArea"></div>
+      <h2>📒 오늘 단어장 (<span id="myList2">0</span>)</h2>
+      <div id="myChips" class="center muted">오늘 추가한 단어가 없어요. 📸 찍어서 추가해보세요!</div>
+      <button class="big-btn b-blue" id="goSets" style="width:100%;margin-top:14px">
+        <span class="emoji">📚</span><span>저장된 단어장(일자별) 보기 · 퀴즈</span>
+      </button>
     </div>
     <span class="link" id="camBack">← 홈으로</span>
   </section>
@@ -368,6 +379,14 @@
       <button class="big-btn b-red" id="retryBtn"><span class="emoji">🔁</span><span>다시 도전</span></button>
       <button class="big-btn b-gray" id="homeBtn"><span class="emoji">🏠</span><span>홈으로</span></button>
     </div>
+  </section>
+
+  <!-- ============ 단어장 목록 (일자별) ============ -->
+  <section id="sets" class="screen">
+    <h1 class="title" style="font-size:22px">📚 내 단어장 (일자별)</h1>
+    <p class="dex-now" style="margin-bottom:12px">날짜별 단어장을 골라 퀴즈! 퀴즈는 그 날 올린 단어로만 출제돼요.</p>
+    <div id="setsList"></div>
+    <span class="link" id="setsBack">← 홈으로</span>
   </section>
 
   <!-- ============ POKEDEX (도감) ============ -->
@@ -422,6 +441,23 @@ function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor
 function loadMy(){try{return JSON.parse(localStorage.getItem("myWords")||"[]");}catch(e){return[];}}
 function saveMy(){localStorage.setItem("myWords",JSON.stringify(myWords));updateMyCounts();}
 
+/* ===== 일자별 단어장 저장/불러오기 ===== */
+function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function dateLabel(ds){const p=(ds||"").split("-");return (+p[1])+"월 "+(+p[2])+"일";}
+function loadSets(){try{return JSON.parse(localStorage.getItem("wordSets")||"[]");}catch(e){return[];}}
+function saveSets(s){localStorage.setItem("wordSets",JSON.stringify(s));}
+function addWordsToToday(pairs){
+  const sets=loadSets(), ds=todayStr();
+  let set=sets.find(s=>s.date===ds);
+  if(!set){ set={date:ds,title:dateLabel(ds),words:[]}; sets.push(set); }
+  let added=0;
+  pairs.forEach(({en,ko})=>{ if(!en||!ko)return; set.words=set.words.filter(w=>w.en!==en); set.words.push({en,ko}); added++; });
+  saveSets(sets);
+  return {added, total:set.words.length, date:ds};
+}
+// 이전 flat 단어장(myWords)을 일자별 세트로 1회 이관
+(function migrateSets(){ const sets=loadSets(); if(sets.length===0 && myWords.length){ saveSets([{date:todayStr(),title:dateLabel(todayStr()),words:myWords.slice()}]); } })();
+
 /* ================= 포인트 & 포켓몬 성장 (10단계) ================= */
 const STAGES=[
   {emoji:"🥚",name:"미스터리 에그"},{emoji:"🐣",name:"갓깬둥이"},{emoji:"🐤",name:"삐약이"},{emoji:"🐥",name:"병아리몬"},{emoji:"🐛",name:"꼬물이"},
@@ -435,10 +471,14 @@ const STAGES=[
   {emoji:"🦊",name:"불꼬리"},{emoji:"🐆",name:"치타슬래시"},{emoji:"🐅",name:"타이가"},{emoji:"🦁",name:"레오킹"},{emoji:"🐘",name:"코끼왕"},
   {emoji:"🦏",name:"코뿔로드"},{emoji:"🦛",name:"하마킹"},{emoji:"🦄",name:"유니콘"},{emoji:"🐲",name:"베이비드래곤"},{emoji:"🐉",name:"레전드래곤"}
 ];
-// 누적 포인트 임계값: 레벨이 오를수록 필요량이 가팔라짐 (12 * n^1.2)
-const THRESH=(function(){const a=[0];for(let i=1;i<STAGES.length;i++){a[i]=a[i-1]+Math.round(12*Math.pow(i,1.2));}return a;})();
+// 누적 임계값: 1문제 정답 = 1P. 레벨업에 필요한 문제 수가 100→150→200…씩 증가
+const THRESH=(function(){const a=[0];for(let i=1;i<STAGES.length;i++){a[i]=a[i-1]+(100+(i-1)*50);}return a;})();
 function loadPoints(){const v=parseInt(localStorage.getItem("points"));return isNaN(v)?0:v;}
 function savePoints(p){localStorage.setItem("points",p);}
+// 하루 성장 한도: 하루 열심히 하면 1단계 정도 (과도한 파밍 방지)
+const DAILY_CAP=150;
+function loadDayEarned(){try{const o=JSON.parse(localStorage.getItem("growthDay")||"{}");return o.date===todayStr()?(o.earned||0):0;}catch(e){return 0;}}
+function addDayEarned(n){const cur=loadDayEarned();localStorage.setItem("growthDay",JSON.stringify({date:todayStr(),earned:cur+n}));}
 function stageOf(pts){let s=0;for(let i=0;i<THRESH.length;i++){if(pts>=THRESH[i])s=i;}return s;} // 0-based
 function renderPet(){
   const pts=loadPoints(), s=stageOf(pts), st=STAGES[s];
@@ -529,6 +569,9 @@ $$("[data-mode]").forEach(b=>b.addEventListener("click",()=>{
 $("#goCamera").addEventListener("click",()=>{renderMy();show("camera");});
 $("#petCard").addEventListener("click",()=>{renderDex();show("dex");});
 $("#dexBack").addEventListener("click",()=>{renderPet();show("home");});
+$("#goSetsHome").addEventListener("click",()=>{renderSets();show("sets");});
+$("#goSets").addEventListener("click",()=>{renderSets();show("sets");});
+$("#setsBack").addEventListener("click",()=>{renderPet();show("home");});
 
 /* ================= CAMERA / OCR (여러 장 · 단어-뜻 쌍) ================= */
 $("#shootBtn").addEventListener("click",()=>$("#camInput").click());
@@ -686,59 +729,86 @@ $("#camInput").addEventListener("change", async e=>{
 $("#addRowBtn").addEventListener("click",()=>addPairRow("","",true));
 
 $("#addAllBtn").addEventListener("click",()=>{
-  const rows=$$("#pairList .pair-row"); let added=0, skipped=0;
+  const rows=$$("#pairList .pair-row"); const pairs=[]; let skipped=0;
   rows.forEach(r=>{
     const en=r.querySelector(".p-en").value.trim().toLowerCase();
     const ko=r.querySelector(".p-ko").value.trim();
-    if(en&&ko){ myWords=myWords.filter(w=>w.en!==en); myWords.push({en,ko}); added++; }
-    else if(en||ko){ skipped++; }
+    if(en&&ko) pairs.push({en,ko}); else if(en||ko) skipped++;
   });
-  if(!added){alert("추가할 단어가 없어요. 영단어와 뜻을 모두 채워주세요.");return;}
-  saveMy();
+  if(!pairs.length){alert("추가할 단어가 없어요. 영단어와 뜻을 모두 채워주세요.");return;}
+  const res=addWordsToToday(pairs);   // 오늘 날짜 단어장에 저장
   $("#pairList").innerHTML=""; $("#reviewArea").classList.add("hidden"); $("#thumbs").innerHTML="";
-  $("#ocrStatus").textContent=`🎉 ${added}개 추가 완료!`+(skipped?` (미완성 ${skipped}줄은 건너뜀)`:"");
-  sndCatch(); renderMy();
+  $("#ocrStatus").textContent=`🎉 오늘(${dateLabel(res.date)}) 단어장에 ${res.added}개 추가! (총 ${res.total}개)`+(skipped?` · 미완성 ${skipped}줄 제외`:"");
+  sndCatch(); renderMy(); updateMyCounts(); updateSetsCount();
 });
 
 function renderMy(){
-  $("#myList2").textContent=myWords.length;
+  const sets=loadSets(), today=sets.find(s=>s.date===todayStr()), words=today?today.words:[];
+  $("#myList2").textContent=words.length;
   const box=$("#myChips");
-  if(myWords.length===0){box.innerHTML="아직 없어요. 첫 단어를 찍어보세요!";box.className="center muted";}
+  if(words.length===0){box.innerHTML="오늘 추가한 단어가 없어요. 📸 찍어서 추가해보세요!";box.className="center muted";}
   else{
     box.className="";
-    box.innerHTML=myWords.map((w,i)=>
+    box.innerHTML=words.map((w,i)=>
       `<span class="word-chip"><b>${w.en}</b> ${w.ko} <span class="x" data-i="${i}">✕</span></span>`).join("");
     box.querySelectorAll(".x").forEach(x=>x.addEventListener("click",()=>{
-      myWords.splice(+x.dataset.i,1);saveMy();renderMy();
+      const s=loadSets(), t=s.find(z=>z.date===todayStr());
+      if(t){ t.words.splice(+x.dataset.i,1); saveSets(s.filter(z=>z.words.length>0)); }
+      renderMy(); updateMyCounts(); updateSetsCount();
     }));
   }
-  const play=$("#myPlayArea");
-  if(myWords.length>=1){
-    play.innerHTML=`
-      <button class="big-btn b-red"  data-mymode="type"><span class="emoji">⌨️</span><span>스펠링 입력으로 연습</span></button>
-      <button class="big-btn b-blue" data-mymode="en2ko"><span class="emoji">🔤</span><span>영어→뜻 맞히기</span></button>
-      <button class="big-btn b-yellow" data-mymode="ko2en"><span class="emoji">💬</span><span>뜻→영단어 맞히기</span></button>`;
-    play.querySelectorAll("[data-mymode]").forEach(b=>b.addEventListener("click",()=>{
-      state.mode=b.dataset.mymode; startBattle(myWords);
-    }));
-  }else{play.innerHTML="";}
 }
-function updateMyCounts(){$("#myCount").textContent="내 단어 "+myWords.length+"개";}
+function updateMyCounts(){const total=loadSets().reduce((a,s)=>a+s.words.length,0);$("#myCount").textContent="저장된 단어 "+total+"개";}
+function updateSetsCount(){const n=loadSets().length;const el=$("#setsCount");if(el)el.textContent=n+"개 단어장 저장됨";}
+
+/* ===== 단어장 목록(일자별) 화면 ===== */
+function renderSets(){
+  const sets=loadSets().slice().sort((a,b)=> a.date<b.date?1:-1);   // 최신 날짜 먼저
+  const box=$("#setsList");
+  if(!sets.length){ box.innerHTML='<p class="muted center" style="padding:20px 0">아직 저장된 단어장이 없어요.<br>📸 카메라로 단어를 찍어 추가해보세요!</p>'; updateSetsCount(); return; }
+  box.innerHTML=sets.map(s=>`
+    <div class="set-card">
+      <div class="set-head">
+        <div class="set-title"><b>${s.title||dateLabel(s.date)}</b> <span class="set-date">${s.date}</span></div>
+        <button class="set-del" data-date="${s.date}" title="삭제">🗑️</button>
+      </div>
+      <div class="set-count">단어 ${s.words.length}개</div>
+      <div class="set-actions">
+        <button class="set-play" data-date="${s.date}" data-m="type">⌨️ 입력</button>
+        <button class="set-play" data-date="${s.date}" data-m="en2ko">🔤 영→뜻</button>
+        <button class="set-play" data-date="${s.date}" data-m="ko2en">💬 뜻→영</button>
+      </div>
+    </div>`).join("");
+  box.querySelectorAll(".set-play").forEach(b=>b.addEventListener("click",()=>{
+    const set=loadSets().find(s=>s.date===b.dataset.date);
+    if(!set||!set.words.length){ alert("단어가 없어요."); return; }
+    if(b.dataset.m!=="type" && set.words.length<2){ alert("객관식은 단어가 2개 이상 필요해요. '입력' 모드로 해보세요."); return; }
+    state.mode=b.dataset.m; startBattle(set.words,{onlySet:true});   // 이 세트 단어로만 출제
+  }));
+  box.querySelectorAll(".set-del").forEach(b=>b.addEventListener("click",()=>{
+    if(!confirm("이 단어장을 삭제할까요?\n(모은 포인트·레벨은 그대로 유지됩니다)")) return;
+    saveSets(loadSets().filter(s=>s.date!==b.dataset.date)); renderSets(); updateMyCounts(); updateSetsCount();
+  }));
+  updateSetsCount();
+}
 updateMyCounts();
+updateSetsCount();
 renderPet();
 
 /* ================= BATTLE ENGINE ================= */
-let lastPool=BANK[1];
-function startBattle(pool){
-  lastPool=pool;
+let lastPool=BANK[1], lastOpts={};
+function startBattle(pool, opts){
+  opts=opts||{};
+  lastPool=pool; lastOpts=opts;
   if(!pool||pool.length<1){alert("단어가 없어요.");return;}
+  state.onlySet=!!opts.onlySet;              // 세트 전용: 오답 보기도 이 세트 단어만 사용
   let full = pool.slice();
-  if((state.mode==="en2ko"||state.mode==="ko2en") && full.length<4){
+  if(!state.onlySet && (state.mode==="en2ko"||state.mode==="ko2en") && full.length<4){
     full = full.concat(BANK[1]).slice(0,Math.max(4,full.length));
   }
   state.queue=shuffle(pool).slice(0,Math.min(QUESTIONS,pool.length));
   state.allPool=full;
-  state.idx=0;state.correct=0;state.wrong=0;state.caught=[];
+  state.idx=0;state.correct=0;state.wrong=0;state.caught=[];state.score=0;state.streak=0;
   const labels={type:"⌨️ 스펠링 입력",en2ko:"🔤 영어→뜻",ko2en:"💬 뜻→영단어"};
   $("#modeLabel").textContent=labels[state.mode];
   renderDots();
@@ -748,7 +818,7 @@ function startBattle(pool){
 function renderDots(){
   $("#dots").innerHTML=state.queue.map((_,i)=>`<i class="${i<state.idx?'done':i===state.idx?'cur':''}"></i>`).join("");
 }
-function updateScore(){$("#scoreLabel").textContent="⭐ "+state.correct;}
+function updateScore(){$("#scoreLabel").textContent="⭐ "+state.score+(state.streak>=2?"  🔥"+state.streak:"");}
 
 function nextQuestion(){
   if(state.idx>=state.queue.length){endBattle();return;}
@@ -792,7 +862,8 @@ function nextQuestion(){
 }
 
 function buildChoices(q,key){
-  const pool=state.allPool.length>=4?state.allPool:state.allPool.concat(BANK[1]);
+  let pool=state.allPool;
+  if(!state.onlySet && pool.length<4) pool=pool.concat(BANK[1]);  // 세트 전용이면 보충 안 함
   const wrongs=shuffle(pool.filter(w=>w.en!==q.en)).slice(0,3);
   const opts=shuffle([q,...wrongs]);
   const area=$("#answerArea");
@@ -828,20 +899,27 @@ function resolveAnswer(right,q){
   const foe=$("#foe"),hp=$("#hp"),toast=$("#toast");
   if(right){
     state.correct++;
+    state.streak++;
+    const combo=Math.min(state.streak,6);
+    const gain=(5+state.diff*5)+(combo-1)*5;   // 기본 10/15/20 + 콤보 보너스(+5씩, 최대 +25)
+    state.score+=gain;
     foe.classList.add("hit");
     hp.style.width="0%";hp.className="crit";
     sndGood();
     state.caught.push($("#sprite").textContent);
-    toast.textContent="⚡ 명중! 잡았다!";
+    toast.textContent = state.streak>=2 ? `🔥 ${state.streak}콤보! +${gain}` : `⚡ 정답! +${gain}`;
     toast.className="toast show";
     setTimeout(()=>{foe.classList.remove("hit");foe.classList.add("faint");},450);
     setTimeout(()=>{sndCatch();},600);
   }else{
     state.wrong++;
+    state.streak=0;
+    const pen=5;
+    state.score=Math.max(0, state.score-pen);   // 배틀 점수 하락(0 아래로는 안 내려감)
     foe.classList.add("hit");
     hp.style.width="60%";hp.className="low";
     sndBad();
-    toast.textContent="💨 빗나감!";
+    toast.textContent=`💨 빗나감! -${pen}`;
     toast.className="toast show";
     setTimeout(()=>foe.classList.remove("hit"),450);
   }
@@ -855,12 +933,16 @@ function endBattle(){
   $("#rWrong").textContent=state.wrong;
   $("#rCatch").textContent=state.caught.length;
 
-  // 포인트 적립 (정답당 난이도 보너스) + 성장/진화 판정
-  const earned=state.correct*(5+state.diff*5);   // 초급 10 / 중급 15 / 고급 20 점
+  // 성장 포인트 = 맞힌 문제 수(1문제=1P), 하루 한도 내에서만 적립. 절대 줄지 않음
+  const room=Math.max(0, DAILY_CAP-loadDayEarned());
+  const earned=Math.min(state.correct, room);
+  if(earned>0) addDayEarned(earned);
   const before=loadPoints(), beforeStage=stageOf(before);
   const after=before+earned, afterStage=stageOf(after);
   savePoints(after);
-  $("#ptsEarned").textContent = earned>0 ? `+${earned} P 획득!  (총 ${after} P)` : `이번엔 포인트 없음… 다시 도전!`;
+  const capped = state.correct>earned;
+  $("#ptsEarned").innerHTML = `🏅 이번 점수 <b>${state.score}</b>점 · 맞힘 ${state.correct}문제<br>🌱 성장 +${earned}P (누적 ${after}P)`
+    + (capped?`<br><span style="color:#c33;font-size:13px">오늘 성장 한도(${DAILY_CAP}P) 도달 — 내일 또 해요!</span>`:"");
   const ev=$("#evolveMsg");
   if(afterStage>beforeStage){
     ev.textContent=`✨ ${STAGES[beforeStage].name} → ${STAGES[afterStage].name} (으)로 진화!`;
@@ -883,7 +965,7 @@ function endBattle(){
   if(rate>=0.7)sndCatch();
   show("result");
 }
-$("#retryBtn").addEventListener("click",()=>startBattle(lastPool));
+$("#retryBtn").addEventListener("click",()=>startBattle(lastPool,lastOpts));
 $("#homeBtn").addEventListener("click",()=>{renderMy();renderPet();show("home");});
 $("#battleBack").addEventListener("click",()=>{ if(confirm("배틀을 그만할까요?")){ renderPet(); show("home"); } });
 
