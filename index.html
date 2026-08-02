@@ -287,6 +287,13 @@
   .sync-actions button{flex:1;padding:11px;border-radius:12px;border:2px solid #222;background:#eef4ff;color:var(--ink);font-weight:800;cursor:pointer;font-size:13px;}
   .sync-actions button:active{transform:translateY(2px);}
   .sync-status{margin-top:8px;font-weight:800;font-size:13px;color:var(--blue-dark);min-height:18px;text-align:center;}
+
+  /* ---------- 점수 기록 ---------- */
+  .hist-row{display:flex;justify-content:space-between;align-items:center;background:#fff;border:3px solid #222;
+    border-radius:14px;padding:12px 14px;margin:0 0 8px;box-shadow:0 3px 0 rgba(0,0,0,.12);}
+  .hist-row.perfect{background:linear-gradient(#fff,#fff3d6);border-color:var(--yellow-dark);}
+  .hist-l b{font-size:15px;color:var(--ink);} .hist-l span{display:block;font-size:11px;color:#99a;font-weight:700;}
+  .hist-r{text-align:right;} .hist-r b{font-size:18px;color:var(--blue);} .hist-r span{display:block;font-size:11px;color:#888;font-weight:700;}
 </style>
 </head>
 <body>
@@ -320,6 +327,11 @@
       <button class="big-btn b-blue" id="goSetsHome" style="width:100%">
         <span class="emoji">📚</span><span>단어장 불러오기 · 퀴즈<small id="setsCount">0개 단어장 저장됨</small></span>
       </button>
+    </div>
+
+    <div class="card">
+      <h2>📊 내 점수 기록</h2>
+      <button class="big-btn b-yellow" id="goHistory" style="width:100%"><span class="emoji">📊</span><span>점수 히스토리 보기</span></button>
     </div>
 
     <div class="card">
@@ -454,6 +466,14 @@
     <span class="link" id="setsBack">← 홈으로</span>
   </section>
 
+  <!-- ============ 점수 기록 ============ -->
+  <section id="history" class="screen">
+    <h1 class="title" style="font-size:22px">📊 점수 기록</h1>
+    <p class="dex-now" id="histSummary" style="margin-bottom:12px">아직 기록이 없어요</p>
+    <div id="histList"></div>
+    <span class="link" id="histBack">← 홈으로</span>
+  </section>
+
   <!-- ============ POKEDEX (도감) ============ -->
   <section id="dex" class="screen">
     <h1 class="title" style="font-size:22px">📖 포켓몬 도감</h1>
@@ -577,8 +597,8 @@ function monSVG(i, size){
 }
 function loadPoints(){const v=parseInt(localStorage.getItem("points"));return isNaN(v)?0:v;}
 function savePoints(p){localStorage.setItem("points",p);cloudPushDebounced();}
-// 하루 성장 한도: 하루 열심히 하면 1단계 정도 (과도한 파밍 방지)
-const DAILY_CAP=150;
+// 하루 획득 한도(과도한 파밍 방지) — 새 점수 체계(100/300)에 맞춰 상향
+const DAILY_CAP=1000;
 function loadDayEarned(){try{const o=JSON.parse(localStorage.getItem("growthDay")||"{}");return o.date===todayStr()?(o.earned||0):0;}catch(e){return 0;}}
 function addDayEarned(n){const cur=loadDayEarned();localStorage.setItem("growthDay",JSON.stringify({date:todayStr(),earned:cur+n}));cloudPushDebounced();}
 function stageOf(pts){let s=0;for(let i=0;i<THRESH.length;i++){if(pts>=THRESH[i])s=i;}return s;} // 0-based
@@ -674,6 +694,8 @@ $("#dexBack").addEventListener("click",()=>{renderPet();show("home");});
 $("#goSetsHome").addEventListener("click",()=>{renderSets();show("sets");});
 $("#goSets").addEventListener("click",()=>{renderSets();show("sets");});
 $("#setsBack").addEventListener("click",()=>{renderPet();show("home");});
+$("#goHistory").addEventListener("click",()=>{renderHistory();show("history");});
+$("#histBack").addEventListener("click",()=>{renderPet();show("home");});
 $("#studyMinInput").addEventListener("change",e=>{
   let v=parseInt(e.target.value); if(isNaN(v)||v<1)v=10; if(v>60)v=60;
   localStorage.setItem("studyMin",v); e.target.value=v;
@@ -1005,7 +1027,7 @@ function resolveAnswer(right,q){
     state.correct++;
     state.streak++;
     const combo=Math.min(state.streak,6);
-    const gain=(5+state.diff*5)+(combo-1)*5;   // 기본 10/15/20 + 콤보 보너스(+5씩, 최대 +25)
+    const gain=10+(combo-1)*5;   // 콤보 점수: 10,15,20,25,30,35 (연속 정답일수록↑)
     state.score+=gain;
     foe.classList.add("hit");
     hp.style.width="0%";hp.className="crit";
@@ -1046,15 +1068,44 @@ function markFolderCleared(date, mode){
   return bonus;
 }
 
+/* ===== 점수 기록(히스토리) ===== */
+function nowMs(){ return new Date().getTime(); }
+function nowStr(){ const d=new Date(), p=n=>String(n).padStart(2,"0"); return `${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function loadHistory(){ try{return JSON.parse(localStorage.getItem("history")||"[]");}catch(e){return[];} }
+function saveHistory(h){ localStorage.setItem("history", JSON.stringify(h.slice(0,200))); cloudPushDebounced(); }
+function pushHistory(e){ e.id=e.ts+"-"+Math.floor(Math.random()*1e9); const h=loadHistory(); h.unshift(e); saveHistory(h); }
+function mergeHistory(a,b){
+  const seen={}, out=[];
+  (a||[]).concat(b||[]).forEach(e=>{ if(e&&e.id&&!seen[e.id]){seen[e.id]=1;out.push(e);} });
+  out.sort((x,y)=>(y.ts||0)-(x.ts||0));
+  return out.slice(0,200);
+}
+function renderHistory(){
+  const h=loadHistory();
+  const total=h.reduce((a,e)=>a+(e.earned||0),0);
+  $("#histSummary").textContent = h.length ? `총 ${h.length}회 · 획득 합계 ${total}P` : "아직 기록이 없어요";
+  const label={type:"⌨️ 스펠링",en2ko:"🔤 영→뜻",ko2en:"💬 뜻→영"};
+  $("#histList").innerHTML = h.length ? h.map(e=>{
+    const tgt=e.mode==="type"?300:100, pct=e.total?Math.round(e.correct/e.total*100):0;
+    const cls=e.earned>=tgt?"perfect":"";
+    return `<div class="hist-row ${cls}"><div class="hist-l"><b>${label[e.mode]||e.mode}</b><span>${e.t}</span></div>`
+      +`<div class="hist-r"><b>${e.earned}P</b><span>${e.correct}/${e.total} · ${pct}%</span></div></div>`;
+  }).join("") : '<p class="muted center" style="padding:20px 0">퀴즈를 풀면 여기에 점수가 쌓여요!</p>';
+}
+
 /* ================= RESULT ================= */
 function endBattle(){
   $("#rCorrect").textContent=state.correct;
   $("#rWrong").textContent=state.wrong;
   $("#rCatch").textContent=state.caught.length;
 
-  // 성장 포인트 = 맞힌 문제 수(1문제=1P), 하루 한도 내에서만 적립. 절대 줄지 않음
-  const room=Math.max(0, DAILY_CAP-loadDayEarned());
-  const earned=Math.min(state.correct, room);
+  // 새 점수 체계: 객관식 만점 100 / 스펠링 만점 300, 콤보 반영해 성과 비례(완벽=만점)
+  const target = state.mode==="type" ? 300 : 100;
+  const N = state.queue.length || 1;
+  let Rmax=0; for(let i=1;i<=N;i++) Rmax += 10+(Math.min(i,6)-1)*5;   // 완벽(최대 콤보) 시 원점수
+  const quizPts = Math.max(0, Math.min(target, Math.round(target * state.score / Rmax)));
+  const room = Math.max(0, DAILY_CAP-loadDayEarned());
+  const earned = Math.min(quizPts, room);
   if(earned>0) addDayEarned(earned);
   // 폴더 연습에서 전부 맞히면 그 모드 '통과' 기록 → 3종 통과 시 완주 보너스
   const passed = state.folder && state.correct>0 && state.wrong===0;
@@ -1062,11 +1113,14 @@ function endBattle(){
   const before=loadPoints(), beforeStage=stageOf(before);
   const after=before+earned+folderBonus, afterStage=stageOf(after);
   savePoints(after);
-  const capped = state.correct>earned;
-  $("#ptsEarned").innerHTML = `🏅 이번 점수 <b>${state.score}</b>점 · 맞힘 ${state.correct}문제<br>🌱 성장 +${earned}P (누적 ${after}P)`
+  pushHistory({ t:nowStr(), ts:nowMs(), mode:state.mode, correct:state.correct, total:N, earned });
+  const capped = quizPts>earned;
+  const perfect = state.wrong===0 && state.correct===N;
+  $("#ptsEarned").innerHTML = `🏅 ${perfect?"만점! ":""}획득 <b>${earned}점</b> / 만점 ${target}점  <span style="color:#888">(${state.correct}/${N} 정답)</span>`
+    + `<br><span style="color:#888;font-size:13px">누적 ${after}P</span>`
     + (passed?`<br><span style="color:#2a75bb;font-weight:900">✅ ${MODE_NAME[state.folder.mode]} 통과!</span>`:"")
     + (folderBonus>0?`<br><span style="color:#e8710a;font-weight:900">🏅 3종 모두 통과! 완주 보너스 +${folderBonus}P</span>`:"")
-    + (capped?`<br><span style="color:#c33;font-size:13px">오늘 성장 한도(${DAILY_CAP}P) 도달 — 내일 또 해요!</span>`:"");
+    + (capped?`<br><span style="color:#c33;font-size:13px">오늘 획득 한도(${DAILY_CAP}P) 도달 — 내일 또!</span>`:"");
   const ev=$("#evolveMsg");
   if(afterStage>beforeStage){
     ev.textContent=`✨ ${STAGES[beforeStage].name} → ${STAGES[afterStage].name} (으)로 진화!`;
@@ -1194,7 +1248,8 @@ function gatherState(){ return {
   points: loadPoints(),
   wordSets: loadSets(),
   growthDay: localStorage.getItem("growthDay")||"",
-  studyMin: localStorage.getItem("studyMin")||""
+  studyMin: localStorage.getItem("studyMin")||"",
+  history: loadHistory()
 }; }
 function setSyncStatus(t){ const el=$("#syncStatus"); if(el)el.textContent=t; }
 let _pushT=null;
@@ -1239,6 +1294,7 @@ async function cloudPull(silent){
     localStorage.setItem("wordSets", JSON.stringify(mergeSets(loadSets(), cloudSets)));
     localStorage.setItem("growthDay", mergeGrowthDay(localStorage.getItem("growthDay"), cloud?cloud.growthDay:null));
     if(cloud&&cloud.studyMin) localStorage.setItem("studyMin", cloud.studyMin);
+    localStorage.setItem("history", JSON.stringify(mergeHistory(loadHistory(), cloud?cloud.history:[])));
     renderPet(); updateMyCounts(); updateSetsCount();
     setSyncStatus("🔄 동기화 완료! (기록 병합됨)");
     cloudPush();   // 병합 결과를 클라우드에도 반영
