@@ -590,7 +590,7 @@ function monSVG(i, size){
 function loadPoints(){const v=parseInt(localStorage.getItem("points"));return isNaN(v)?0:v;}
 function savePoints(p){localStorage.setItem("points",p);cloudPushDebounced();}
 // 하루 획득 한도(과도한 파밍 방지)
-const DAILY_CAP=3000;
+const DAILY_CAP=10000;
 function loadDayEarned(){try{const o=JSON.parse(localStorage.getItem("growthDay")||"{}");return o.date===todayStr()?(o.earned||0):0;}catch(e){return 0;}}
 function addDayEarned(n){const cur=loadDayEarned();localStorage.setItem("growthDay",JSON.stringify({date:todayStr(),earned:cur+n}));cloudPushDebounced();}
 function stageOf(pts){let s=0;for(let i=0;i<THRESH.length;i++){if(pts>=THRESH[i])s=i;}return s;} // 0-based
@@ -936,7 +936,7 @@ function startBattle(pool, opts){
 function renderDots(){
   $("#dots").innerHTML=state.queue.map((_,i)=>`<i class="${i<state.idx?'done':i===state.idx?'cur':''}"></i>`).join("");
 }
-function updateScore(){$("#scoreLabel").textContent="⭐ "+state.score+(state.streak>=2?"  🔥"+state.streak:"");}
+function updateScore(){$("#scoreLabel").textContent="⭐ "+state.score;}
 
 function nextQuestion(){
   if(state.idx>=state.queue.length){endBattle();return;}
@@ -1017,26 +1017,22 @@ function resolveAnswer(right,q){
   const foe=$("#foe"),hp=$("#hp"),toast=$("#toast");
   if(right){
     state.correct++;
-    state.streak++;
-    const base = state.mode==="type" ? 30 : 10;       // 1개당: 스펠링 30, 영뜻/뜻영 10
-    const bonus = Math.min((state.streak-1)*10, 50);   // 연속 보너스(최대 +50)
-    const gain = base + bonus;
-    state.score += gain;
+    const N=state.queue.length||1, tgt=state.mode==="type"?300:100;
+    state.score=Math.min(tgt, Math.round(tgt*state.correct/N));   // 개당 균등, 만점=300/100
     foe.classList.add("hit");
     hp.style.width="0%";hp.className="crit";
     sndGood();
     state.caught.push($("#sprite").textContent);
-    toast.textContent = bonus>0 ? `🔥 ${state.streak}콤보! +${gain}` : `⚡ 정답! +${gain}`;
+    toast.textContent=`⚡ 정답!`;
     toast.className="toast show";
     setTimeout(()=>{foe.classList.remove("hit");foe.classList.add("faint");},450);
     setTimeout(()=>{sndCatch();},600);
   }else{
     state.wrong++;
-    state.streak=0;                              // 콤보 끊김(보너스 초기화)
     foe.classList.add("hit");
     hp.style.width="60%";hp.className="low";
     sndBad();
-    toast.textContent=`💨 빗나감! (콤보 끊김)`;
+    toast.textContent=`💨 빗나감!`;
     toast.className="toast show";
     setTimeout(()=>foe.classList.remove("hit"),450);
   }
@@ -1090,10 +1086,12 @@ function endBattle(){
   $("#rWrong").textContent=state.wrong;
   $("#rCatch").textContent=state.caught.length;
 
-  // 점수: 1개당(스펠링 30 / 영뜻·뜻영 10) + 연속 보너스(최대 +50). state.score에 누적됨
+  // 점수: 개당 균등, 만점 = 스펠링 300 / 영뜻·뜻영 100 (콤보 보너스 없음)
   const N = state.queue.length || 1;
+  const target = state.mode==="type" ? 300 : 100;
+  const quizPts = Math.min(target, Math.round(target*state.correct/N));
   const room = Math.max(0, DAILY_CAP-loadDayEarned());
-  const earned = Math.min(state.score, room);
+  const earned = Math.min(quizPts, room);
   if(earned>0) addDayEarned(earned);
   // 폴더 연습에서 전부 맞히면 그 모드 '통과' 기록 → 3종 통과 시 완주 보너스
   const passed = state.folder && state.correct>0 && state.wrong===0;
@@ -1102,9 +1100,9 @@ function endBattle(){
   const after=before+earned+folderBonus, afterStage=stageOf(after);
   savePoints(after);
   pushHistory({ t:nowStr(), ts:nowMs(), mode:state.mode, correct:state.correct, total:N, earned });
-  const capped = state.score>earned;
+  const capped = quizPts>earned;
   const perfect = state.wrong===0 && state.correct===N;
-  $("#ptsEarned").innerHTML = `🏅 ${perfect?"올클리어! ":""}획득 <b>${earned}점</b>  <span style="color:#888">(정답 ${state.correct}/${N})</span>`
+  $("#ptsEarned").innerHTML = `🏅 ${perfect?"만점! ":""}획득 <b>${earned}점</b> / 만점 ${target}점  <span style="color:#888">(${state.correct}/${N} 정답)</span>`
     + `<br><span style="color:#888;font-size:13px">누적 ${after}P</span>`
     + (passed?`<br><span style="color:#2a75bb;font-weight:900">✅ ${MODE_NAME[state.folder.mode]} 통과!</span>`:"")
     + (folderBonus>0?`<br><span style="color:#e8710a;font-weight:900">🏅 3종 모두 통과! 완주 보너스 +${folderBonus}P</span>`:"")
