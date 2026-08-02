@@ -597,8 +597,8 @@ function monSVG(i, size){
 }
 function loadPoints(){const v=parseInt(localStorage.getItem("points"));return isNaN(v)?0:v;}
 function savePoints(p){localStorage.setItem("points",p);cloudPushDebounced();}
-// 하루 획득 한도(과도한 파밍 방지) — 새 점수 체계(100/300)에 맞춰 상향
-const DAILY_CAP=1000;
+// 하루 획득 한도(과도한 파밍 방지)
+const DAILY_CAP=3000;
 function loadDayEarned(){try{const o=JSON.parse(localStorage.getItem("growthDay")||"{}");return o.date===todayStr()?(o.earned||0):0;}catch(e){return 0;}}
 function addDayEarned(n){const cur=loadDayEarned();localStorage.setItem("growthDay",JSON.stringify({date:todayStr(),earned:cur+n}));cloudPushDebounced();}
 function stageOf(pts){let s=0;for(let i=0;i<THRESH.length;i++){if(pts>=THRESH[i])s=i;}return s;} // 0-based
