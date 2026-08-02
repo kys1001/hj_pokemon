@@ -1018,26 +1018,25 @@ function resolveAnswer(right,q){
   if(right){
     state.correct++;
     state.streak++;
-    const combo=Math.min(state.streak,6);
-    const gain=10+(combo-1)*5;   // 콤보 점수: 10,15,20,25,30,35 (연속 정답일수록↑)
-    state.score+=gain;
+    const base = state.mode==="type" ? 30 : 10;       // 1개당: 스펠링 30, 영뜻/뜻영 10
+    const bonus = Math.min((state.streak-1)*10, 50);   // 연속 보너스(최대 +50)
+    const gain = base + bonus;
+    state.score += gain;
     foe.classList.add("hit");
     hp.style.width="0%";hp.className="crit";
     sndGood();
     state.caught.push($("#sprite").textContent);
-    toast.textContent = state.streak>=2 ? `🔥 ${state.streak}콤보! +${gain}` : `⚡ 정답! +${gain}`;
+    toast.textContent = bonus>0 ? `🔥 ${state.streak}콤보! +${gain}` : `⚡ 정답! +${gain}`;
     toast.className="toast show";
     setTimeout(()=>{foe.classList.remove("hit");foe.classList.add("faint");},450);
     setTimeout(()=>{sndCatch();},600);
   }else{
     state.wrong++;
-    state.streak=0;
-    const pen=5;
-    state.score=Math.max(0, state.score-pen);   // 배틀 점수 하락(0 아래로는 안 내려감)
+    state.streak=0;                              // 콤보 끊김(보너스 초기화)
     foe.classList.add("hit");
     hp.style.width="60%";hp.className="low";
     sndBad();
-    toast.textContent=`💨 빗나감! -${pen}`;
+    toast.textContent=`💨 빗나감! (콤보 끊김)`;
     toast.className="toast show";
     setTimeout(()=>foe.classList.remove("hit"),450);
   }
@@ -1078,8 +1077,8 @@ function renderHistory(){
   $("#histSummary").textContent = h.length ? `총 ${h.length}회 · 획득 합계 ${total}P` : "아직 기록이 없어요";
   const label={type:"⌨️ 스펠링",en2ko:"🔤 영→뜻",ko2en:"💬 뜻→영"};
   $("#histList").innerHTML = h.length ? h.map(e=>{
-    const tgt=e.mode==="type"?300:100, pct=e.total?Math.round(e.correct/e.total*100):0;
-    const cls=e.earned>=tgt?"perfect":"";
+    const pct=e.total?Math.round(e.correct/e.total*100):0;
+    const cls=(e.total&&e.correct===e.total)?"perfect":"";
     return `<div class="hist-row ${cls}"><div class="hist-l"><b>${label[e.mode]||e.mode}</b><span>${e.t}</span></div>`
       +`<div class="hist-r"><b>${e.earned}P</b><span>${e.correct}/${e.total} · ${pct}%</span></div></div>`;
   }).join("") : '<p class="muted center" style="padding:20px 0">퀴즈를 풀면 여기에 점수가 쌓여요!</p>';
@@ -1091,13 +1090,10 @@ function endBattle(){
   $("#rWrong").textContent=state.wrong;
   $("#rCatch").textContent=state.caught.length;
 
-  // 새 점수 체계: 객관식 만점 100 / 스펠링 만점 300, 콤보 반영해 성과 비례(완벽=만점)
-  const target = state.mode==="type" ? 300 : 100;
+  // 점수: 1개당(스펠링 30 / 영뜻·뜻영 10) + 연속 보너스(최대 +50). state.score에 누적됨
   const N = state.queue.length || 1;
-  let Rmax=0; for(let i=1;i<=N;i++) Rmax += 10+(Math.min(i,6)-1)*5;   // 완벽(최대 콤보) 시 원점수
-  const quizPts = Math.max(0, Math.min(target, Math.round(target * state.score / Rmax)));
   const room = Math.max(0, DAILY_CAP-loadDayEarned());
-  const earned = Math.min(quizPts, room);
+  const earned = Math.min(state.score, room);
   if(earned>0) addDayEarned(earned);
   // 폴더 연습에서 전부 맞히면 그 모드 '통과' 기록 → 3종 통과 시 완주 보너스
   const passed = state.folder && state.correct>0 && state.wrong===0;
@@ -1106,9 +1102,9 @@ function endBattle(){
   const after=before+earned+folderBonus, afterStage=stageOf(after);
   savePoints(after);
   pushHistory({ t:nowStr(), ts:nowMs(), mode:state.mode, correct:state.correct, total:N, earned });
-  const capped = quizPts>earned;
+  const capped = state.score>earned;
   const perfect = state.wrong===0 && state.correct===N;
-  $("#ptsEarned").innerHTML = `🏅 ${perfect?"만점! ":""}획득 <b>${earned}점</b> / 만점 ${target}점  <span style="color:#888">(${state.correct}/${N} 정답)</span>`
+  $("#ptsEarned").innerHTML = `🏅 ${perfect?"올클리어! ":""}획득 <b>${earned}점</b>  <span style="color:#888">(정답 ${state.correct}/${N})</span>`
     + `<br><span style="color:#888;font-size:13px">누적 ${after}P</span>`
     + (passed?`<br><span style="color:#2a75bb;font-weight:900">✅ ${MODE_NAME[state.folder.mode]} 통과!</span>`:"")
     + (folderBonus>0?`<br><span style="color:#e8710a;font-weight:900">🏅 3종 모두 통과! 완주 보너스 +${folderBonus}P</span>`:"")
